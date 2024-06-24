@@ -13,6 +13,8 @@ from reportlab.platypus import Paragraph
 
 title_list = []
 
+chapter_list = []
+
 #   For interaction with the file system
 import os
 
@@ -70,37 +72,48 @@ def build_template(title, subtitle, software_version):
     title_para = Paragraph(str('TEST REPORT'), style=title_style)
     subtitle_para = Paragraph((title + " (" + subtitle + ")"), style=styles['Heading1'])
     abstract_para = Paragraph(str(abstract), style=styles['Normal'])
-    table_of_contents_para = Paragraph('Table of Contents', style=styles['Heading2'])
     
     elements.append(title_para)
     elements.append(Spacer(1, 40))  # Add space after the title
     elements.append(subtitle_para)
     elements.append(Spacer(1, 20))  # Add space after the subtitle
     elements.append(abstract_para)
-    elements.append(Spacer(1, 40))  # Add space after the subtitle
+    elements.append(PageBreak())
+    
+    return elements
+
+
+def build_table_of_contents():
+    elements = []
+    styles = Style.getSampleStyleSheet()
+
+    table_of_contents_para = Paragraph('Table of Contents', style=styles['Heading2'])
+
     elements.append(table_of_contents_para)
     elements.append(Spacer(1, 10))  # Add space after the title
-    
-    content = {
-        'Configuration': ['General', 'WebSocket'],
-        'Information Gathering': ['BootNotification', 'StatusNotification', 'GetConfiguration']
-    }
 
     index = 0
 
-    for key, value in content.items():
+    for indexitem in range(0, len(title_list)):
         index += 1
-        entry_para = Paragraph((str(index) + '.\t' + key), style=styles['Heading3'])
+        entry_para = Paragraph((str(indexitem+1) + '.\t' + title_list[indexitem]), style=styles['Heading3'])
         elements.append(entry_para)
+        
         subindex = 0
-        for subentry in value:
+        for chapter in chapter_list[indexitem]:        
             subindex += 1
-            subentry_para = Paragraph((str(index) + "." + str(subindex) + "\t" + subentry), style=styles['Heading4'])
+            subentry_para = Paragraph((str(indexitem+1) + "." + str(subindex) + "\t" + chapter), style=styles['Heading4'])
             elements.append(subentry_para)
-        elements.append(Spacer(1, 5))  # Add space after the subtitle
 
-    elements.append(PageBreak())
+        
+        #for subentry in value:
+        #    subindex += 1
+        #     subentry_para = Paragraph((str(index) + "." + str(subindex) + "\t" + subentry), style=styles['Heading4'])
+        #     elements.append(subentry_para)
+        elements.append(Spacer(1, 5))  # Add space after the subtitle
     
+    elements.append(PageBreak())
+
     return elements
 
 
@@ -128,6 +141,20 @@ def build_document(data, insertPageBreakAfter):
     for key, value in data['data'].items():
         # Add the key as a heading
         heading = Paragraph(f"<b>{key}</b>", headline_style)
+
+        print(data['title'], title_list, title_list.index(data['title']), key, chapter_list)
+
+        # Ensure chapter_list has enough sublists
+        while len(chapter_list) <= title_list.index(data['title']):
+            chapter_list.append([])
+
+        if key not in chapter_list[title_list.index(data['title'])]:
+            chapter_list[title_list.index(data['title'])].append(key)
+
+        print(chapter_list[title_list.index(data['title'])])
+        print(">>>>>-------------<<<<<<")
+
+
         elements.append(heading)
         elements.append(Spacer(1, 12))  # Add space after the heading
 

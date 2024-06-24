@@ -16,14 +16,7 @@ session_id = ''
 
 # List containing all contents of the test report
 report_document = []
-
-
-# Print text in bold style
-def printTitle(title):
-    print('\033[1m')
-    print(title)
-    print('\033[0m')
-
+template_document = []
 
 # Generate a random session token used to store the report document
 def generateSessionToken(length):
@@ -42,7 +35,7 @@ def init(title, subtitle, software_version):
     tprint(title)
     print(subtitle + "\nVersion: " + software_version, end='\n\n')
     
-    report_document.append(
+    template_document.append(
         Report.build_template(
             title=title, 
             subtitle=subtitle, 
@@ -53,7 +46,7 @@ def init(title, subtitle, software_version):
     global session_id 
     session_id = generateSessionToken(5)
 
-    printTitle("Test report")
+    print('Test report')
     print(">>\tSession ID: " + str(session_id))
 
     return Names.error_state.NO_ERROR
@@ -129,21 +122,10 @@ def getIpAddress(default_ip):
                 while verify_ip != True:
                     ip = input(">>\tPlease enter your OCPP portal address (local IPv4 address):\n<<\t")
 
-                    # Check whether the address is valid
-                    try:
-                        # Check if number is valid IP
-                        socket.inet_aton(ip)
-
-                        # Check IP format (IPv4)
-                        if ip.count('.') > 3 or ip.count('.') < 3:
-                            print(">>\tUndefinded input. Please use only (y/n) for input.")
-                            continue
-                        else:
-                            verify_ip = True
-                            print(">>\tIP address is valid, using: " + str(ip))
-                    except socket.error:
-                        # Try again
-                        print(">>\tInvalid IP address")
+                    if verify_ip_address(ip_address=ip) == True:
+                        verify_ip = True
+                    else:
+                        print(">>\tInvalid IP address.")
 
                 break
 
@@ -158,6 +140,30 @@ def getIpAddress(default_ip):
 
     print("")
     return ip
+
+
+def verify_ip_address(ip_address):
+    # Check whether the address is valid
+    try:
+        # Check if number is valid IP
+        socket.inet_aton(ip_address)
+
+        # Check IP format (IPv4)
+        if ip_address.count('.') > 3 or ip_address.count('.') < 3:
+            print(">>\tUndefinded input. Please use only (y/n) for input.")
+            return False
+        else:
+            return True
+    except socket.error:
+        # Try again
+        return False
+    
+def verify_port_number(port):
+    if (int(port) >= 0 and int(port) <= 65535):
+        return True
+    else:
+        return False
+
 
 
 # Configurate IP address used for WebSocket connection
@@ -191,11 +197,12 @@ def getPort(default_port):
 
                     # Validate that input is a port number
                     # Attention: This function does not check whether reserved ports are entered
-                    if (port >= 0 and port <= 65535):
+                    
+                    if verify_port_number(port=port) == True:
                         verify_port = True
                     else:
                         print(">>\tInvalid port number")
-
+                        
                 break
 
             # Use default port
@@ -218,8 +225,15 @@ def add_to_document(data):
 
 # Finally generate a report document
 def generate_report():
+
+    template_document.append(
+        Report.build_table_of_contents()
+    )
+
+    export_document = template_document + report_document
+
     filename = str(session_id) + '.pdf'
-    Report.render_document(data=report_document, filename=filename)
+    Report.render_document(data=export_document, filename=filename)
 
 
 # This function permanently monitors the connection to the charging station
@@ -248,7 +262,6 @@ async def on_connect(websocket, path):
         return await websocket.close()
 
     charge_point_id = path.strip("/")
-    
     cp = CSMS.ChargePoint(charge_point_id, websocket)
 
     '''
@@ -258,7 +271,8 @@ async def on_connect(websocket, path):
 
     # Task used as a controller (state machine) for the tests and documentation
     controller_task = asyncio.create_task(
-        cp.controller(session_id=session_id, scheduling_pause_time=0.001)
+        #cp.controller(session_id=session_id, scheduling_pause_time=0.001)
+        cp.controller(session_id=session_id, scheduling_pause_time=1)
     )
 
     # Task to read incoming OCPP messages

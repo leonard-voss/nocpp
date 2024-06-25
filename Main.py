@@ -17,8 +17,8 @@ except ModuleNotFoundError:
 
 
 # Constants and global variables
-TITLE = 'Zero Charge Point Protocol'
-SUBTITLE = 'ZCPP'
+TITLE = 'No Charge Point Protocol'
+SUBTITLE = 'NOCPP'
 SOFTWARE_VERSION = '1.0'
 DEFAULT_IP_ADDRESS = '10.8.0.46'
 DEFAULT_PORT = 9000
@@ -91,7 +91,6 @@ async def main():
 
     logging.info("Server Started listening to new connections...")
     await server.wait_closed()
-
 
 #   Execute main function
 asyncio.run(main())

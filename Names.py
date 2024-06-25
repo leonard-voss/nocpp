@@ -5,7 +5,8 @@ import types
 state_machine = types.SimpleNamespace()
 state_machine.INIT = 0
 state_machine.INFORMATION_GATHERING = 1
-state_machine.END = 2
+state_machine.ATTACK_SZENARIOS = 2
+state_machine.END = 3
 
 #   Variable to generate reports
 report_state = types.SimpleNamespace()

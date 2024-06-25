@@ -15,6 +15,11 @@ import Report
 
 events_monitored = []
 
+# Only default values
+timeout_interval = 30
+heartbeat_interval = 10
+number_of_connectors = 1
+
 # Class ChargePoint
 class ChargePoint(cp):
 
@@ -29,14 +34,14 @@ class ChargePoint(cp):
             match current_state:
 
                 case Names.state_machine.INIT:
+                    #   Init has currently no function
                     current_state = Names.state_machine.INFORMATION_GATHERING
 
                 case Names.state_machine.INFORMATION_GATHERING:
                     await self.getConfiguration()
+                    current_state = Names.state_machine.END
 
-                    # Optional: Get Diagnostics
-
-                    # Optional: Trigger Message -> Erkennung ob unterstützt wird
+                case Names.state_machine.ATTACK_SZENARIOS:
 
                     current_state = Names.state_machine.END
 
@@ -83,6 +88,19 @@ class ChargePoint(cp):
             list_entry.append(entry['value'])
 
             data_list.append(list_entry)
+
+            #   Fetch timeout interval, heatbeat interval and number of connectors of the charge point
+            if entry['key'] == 'ConnectionTimeOut':
+                timeout_interval = int(entry['value'])
+                print(">>\tTimout interval fetched: " + str(timeout_interval))
+
+            if entry['key'] == 'HeartbeatInterval':
+                heartbeat_interval = int(entry['value'])
+                print(">>\tHeartbeat interval fetched: " + str(heartbeat_interval))
+
+            if entry['key'] == 'NumberOfConnectors':
+                number_of_connectors = int(entry['value'])
+                print(">>\tNumber of connectors: " + str(number_of_connectors))
                 
         job_data = dict()
 

@@ -142,18 +142,12 @@ def build_document(data, insertPageBreakAfter):
         # Add the key as a heading
         heading = Paragraph(f"<b>{key}</b>", headline_style)
 
-        print(data['title'], title_list, title_list.index(data['title']), key, chapter_list)
-
         # Ensure chapter_list has enough sublists
         while len(chapter_list) <= title_list.index(data['title']):
             chapter_list.append([])
 
         if key not in chapter_list[title_list.index(data['title'])]:
             chapter_list[title_list.index(data['title'])].append(key)
-
-        print(chapter_list[title_list.index(data['title'])])
-        print(">>>>>-------------<<<<<<")
-
 
         elements.append(heading)
         elements.append(Spacer(1, 12))  # Add space after the heading

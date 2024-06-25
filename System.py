@@ -6,6 +6,8 @@ import asyncio
 import random
 import types
 
+import sys
+
 from art import *
 
 import Report
@@ -22,7 +24,7 @@ template_document = []
 def generateSessionToken(length):
     # Input characters that are allowed for random name generation
     letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-    token = 'zcpp-report-'
+    token = 'nocpp-report-'
     
     for i in range(length):
         token = token + str(random.choice(letters))
@@ -60,7 +62,7 @@ def store_configuration(system_version, protocol_version, ip_address, port, boot
     job_data['General'] = [
         ['Parameter', 'Value'],
         ['Boot Timestamp', str(boot_timestamp)],
-        ['(ZCPP) Software Version', str(system_version)],
+        ['(NOCPP) Software Version', str(system_version)],
         ['(OCPP) Protocol Version (JSON)', str(protocol_version)],
         ['Session Identification Number', str(session_id)]
     ]
@@ -271,7 +273,6 @@ async def on_connect(websocket, path):
 
     # Task used as a controller (state machine) for the tests and documentation
     controller_task = asyncio.create_task(
-        #cp.controller(session_id=session_id, scheduling_pause_time=0.001)
         cp.controller(session_id=session_id, scheduling_pause_time=1)
     )
 

@@ -1,5 +1,5 @@
+# Required libraries
 import types
-
 
 # States for the State Machine, highly-readable format
 state_machine = types.SimpleNamespace()
@@ -15,7 +15,7 @@ report_state.INIT = 1
 report_state.CONFIGURATION = 2
 report_state.GET_CONFIGURATION = 3
 
-
+# Not sure if we need this feature yet.
 error_state = types.SimpleNamespace()
 error_state.NO_ERROR = 0
 error_state.ALREADY_REPORTED = 1

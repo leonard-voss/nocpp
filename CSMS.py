@@ -1,21 +1,23 @@
-
+# Import libraries
 from ocpp.routing import on, after
 import ocpp.v16
 from ocpp.v16 import ChargePoint as cp
 from ocpp.v16 import call_result, call
 from ocpp.v16.enums import Action, RegistrationStatus
 from datetime import datetime
-
 import time
-import System
-import Names
 import asyncio
 
+# Import required system files
+import System
+import Names
 import Report
 
+# If an event has been monitored before, do not add it to the report document again
 events_monitored = []
 
-# Only default values
+# Global variables used in different attack szenarios
+# Only default values, modified by GetConfiguration action
 timeout_interval = 30
 heartbeat_interval = 10
 number_of_connectors = 1
@@ -23,7 +25,7 @@ number_of_connectors = 1
 # Class ChargePoint
 class ChargePoint(cp):
 
-    # Controller in a state machine to execute stuff
+    # Controller in a state machine to execute attack szenarios
     async def controller(self, session_id, scheduling_pause_time):
         # Initialize the State Machine
         current_state = Names.state_machine.INIT
@@ -32,39 +34,51 @@ class ChargePoint(cp):
         while True:
             # State machine for executing tests
             match current_state:
-
+                # Init state -> Currently no function
                 case Names.state_machine.INIT:
-                    #   Init has currently no function
                     current_state = Names.state_machine.INFORMATION_GATHERING
 
+                # Information Gathering
                 case Names.state_machine.INFORMATION_GATHERING:
                     await self.getConfiguration()
                     current_state = Names.state_machine.END
 
+                # Attack szenarios
                 case Names.state_machine.ATTACK_SZENARIOS:
 
                     current_state = Names.state_machine.END
 
+                # End state
                 case Names.state_machine.END:
                     #   Generate report document (PDF-File) and exit controller
                     System.generate_report()
                     break
 
-                # Default case
+                # Default state -> Used as undefined state case
                 case _:
                     print("[" + str(datetime.datetime.now()) + "]:\t" + "(Controller)\t Undefined state --> Exit")
                     break
 
+            # You need to pause the state machine, because otherwise the
+            # listining for ocpp action will not continue correctly
             await asyncio.sleep(scheduling_pause_time)
 
 
+    # Just for console outputs
     def printEvent(self, eventType):
-        print(eventType + " event")
+        print('>>\t' + str(eventType) + " event successfully monitored")
 
 
+    # Just for console outputs
     def printLine(self):
         print("----------------------------------------")
 
+
+    '''
+        Information Gathering (Fingerprint)
+    '''
+
+    # Get Configuration event
     async def getConfiguration(self):
         print(">> Try to get Configuration")
 
@@ -79,7 +93,7 @@ class ChargePoint(cp):
             ["Key", "Read only", "Value"]
         ]
 
-        # Für jeden Eintrag
+        # for each entry
         for entry in response.configuration_key:
             list_entry = []
 
@@ -89,7 +103,8 @@ class ChargePoint(cp):
 
             data_list.append(list_entry)
 
-            #   Fetch timeout interval, heatbeat interval and number of connectors of the charge point
+            # Fetch timeout interval, heatbeat interval and number of connectors of the charge point
+            # Store data in global variables
             if entry['key'] == 'ConnectionTimeOut':
                 timeout_interval = int(entry['value'])
                 print(">>\tTimout interval fetched: " + str(timeout_interval))
@@ -106,21 +121,24 @@ class ChargePoint(cp):
 
         job_data['GetConfiguration'] = data_list
             
-        
+        # Generate documentation for this action
         job = System.create_report_job(
             title='Information Gathering', 
             number=Names.report_state.GET_CONFIGURATION, 
             data=job_data
         )
-        
-        print('>>\t' + "Get Configuration" + " event successfully monitored")
-        
+                
         data = Report.build_document(job, insertPageBreakAfter=True)
-
         System.add_to_document(data)
 
+        self.printEvent("Get Configuration")
 
-    # BootNotification
+
+    '''
+        Actions initiated by the Charge Station (client)
+    '''
+
+    # BootNotification, triggered every time the Charge Station boots or reboots
     @on(Action.BootNotification)
     def on_boot_notification(self, charge_point_vendor: str, charge_point_model: str, **kwargs):
         if 'BootNotification' not in events_monitored:
@@ -129,18 +147,18 @@ class ChargePoint(cp):
 
             job_data = dict()
 
-            # Hinzufügen der notwendigen Parameter
+            # Add required data to job
             job_data['BootNotification'] = [
                 ['Parameter', 'Value'],
                 ['Charge Point Vendor', str(charge_point_vendor)],
                 ['Charge Point Model', str(charge_point_model)],
             ]
 
-            # Hinzufügen der optionalen Parameter
+            # Add optional data to job
             for key, value in kwargs.items():
                 job_data['BootNotification'].append([str(key), str(value)])
 
-
+            # Generate event documentation
             job = System.create_report_job(
                 title='Information Gathering', 
                 number=Names.report_state.GET_CONFIGURATION, 
@@ -153,6 +171,7 @@ class ChargePoint(cp):
 
             events_monitored.append('BootNotification')
         
+        # Required response
         return call_result.BootNotification(
             current_time=datetime.utcnow().isoformat(),
             interval=10,
@@ -160,7 +179,7 @@ class ChargePoint(cp):
         )
 
 
-    # StatusNotification
+    # StatusNotification, informs the CSMS that the status of the station changed
     @on(Action.StatusNotification)
     def on_status_notification(self, connector_id: int, error_code: str, status:str, vendor_error_code: str, timestamp: str, **kwargs):
         if 'StatusNotification' not in events_monitored:
@@ -169,7 +188,7 @@ class ChargePoint(cp):
 
             job_data = dict()
 
-            # Hinzufügen der notwendigen Parameter
+            # Add required data to job
             job_data['StatusNotification'] = [
                 ['Connector ID', str(connector_id)],
                 ['Error Code', str(error_code)],
@@ -178,10 +197,11 @@ class ChargePoint(cp):
                 ['Timestamp', str(timestamp)]
             ]
 
-            # Hinzufügen der optionalen Parameter
+            # Add optional data to job
             for key, value in kwargs.items():
                 job_data['StatusNotification'].append([str(key), str(value)])
 
+            # Generate event documentation
             job = System.create_report_job(
                 title='Information Gathering', 
                 number=Names.report_state.GET_CONFIGURATION, 
@@ -194,14 +214,17 @@ class ChargePoint(cp):
 
             events_monitored.append('StatusNotification')
 
+        # Required event response
         return call_result.StatusNotification()
 
-    # Heartbeat
+    # Heartbeat, used for timeout detection and real time clock synchronisation
     @on(Action.Heartbeat)
     async def on_heartbeat(self):
         self.printLine()
         self.printEvent("Heartbeat")
         self.printLine()
+
+        # Required event reponse
         return ocpp.v16.call_result.Heartbeat(
             current_time=datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S') + "Z"
         )

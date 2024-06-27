@@ -1,26 +1,29 @@
-
+# Required libraries
 import socket
 import logging
 import CSMS
 import asyncio
 import random
 import types
-
 import sys
-
 from art import *
 
+# Required system files
 import Report
 import Names
 
-
+# Used to create an unique session and create a individual file name for the report
 session_id = ''
 
 # List containing all contents of the test report
+# Report document is the list where the finale report is generated from
 report_document = []
+
+# This list is used to store the generated table of contents and is added
+# to the report document in the final generation process 
 template_document = []
 
-# Generate a random session token used to store the report document
+# Generate a random session token with a specific length
 def generateSessionToken(length):
     # Input characters that are allowed for random name generation
     letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
@@ -34,9 +37,11 @@ def generateSessionToken(length):
 
 # Initialization function, is called first when the system starts
 def init(title, subtitle, software_version):
-    tprint(title)
+    # Console outputs
+    art.tprint(title)
     print(subtitle + "\nVersion: " + software_version, end='\n\n')
     
+    # Generate report template (title page)
     template_document.append(
         Report.build_template(
             title=title, 
@@ -45,6 +50,7 @@ def init(title, subtitle, software_version):
         )
     )
 
+    # Create global session token
     global session_id 
     session_id = generateSessionToken(5)
 
@@ -54,8 +60,8 @@ def init(title, subtitle, software_version):
     return Names.error_state.NO_ERROR
 
 
+# Used to store the WebSocket and application configuration to the report document
 def store_configuration(system_version, protocol_version, ip_address, port, boot_timestamp):
-
     #   Add data to job
     job_data = dict()
 
@@ -73,14 +79,16 @@ def store_configuration(system_version, protocol_version, ip_address, port, boot
         ['(Portal) Port number', str(port)]
     ]
 
-    #   Execute job and merge files
+    # Create report job
     job = create_report_job(title='Configuration', number=Names.report_state.CONFIGURATION, data=job_data)    
     
+    # Add generate content to the report document
     report_document.append(
         Report.build_document(job, insertPageBreakAfter=True)
     )
 
     return 0
+
 
 # Format input data to job
 def create_report_job(title, number, data):
@@ -89,7 +97,6 @@ def create_report_job(title, number, data):
         'number': number,
         'data': data
     }
-
     return job
 
 
@@ -98,7 +105,7 @@ def getLocalIpAddress():
     return socket.gethostbyname_ex(socket.gethostname())[-1]
 
 
-# Configurate IP address used for WebSocket connection
+# Manual ip configuration via console
 def getIpAddress(default_ip):
     # You can change the default IP address in Main.py
     print(">>\tDefault IP Adress is: " + str(default_ip))
@@ -107,6 +114,7 @@ def getIpAddress(default_ip):
 
     answer = ''
 
+    # Validate user input data
     while (answer not in ['Y', 'N']):
         answer = input(">>\tDo you want to change the IP address? (y/n)\n<<\t")
         answer = answer.upper()
@@ -144,6 +152,7 @@ def getIpAddress(default_ip):
     return ip
 
 
+# Process to verify that a IPv4 address is valid
 def verify_ip_address(ip_address):
     # Check whether the address is valid
     try:
@@ -160,6 +169,8 @@ def verify_ip_address(ip_address):
         # Try again
         return False
     
+
+# Function to check if a port is valid
 def verify_port_number(port):
     if (int(port) >= 0 and int(port) <= 65535):
         return True
@@ -167,8 +178,7 @@ def verify_port_number(port):
         return False
 
 
-
-# Configurate IP address used for WebSocket connection
+# Configurate port used for WebSocket connection
 def getPort(default_port):
     # You can change the default port in Main.py
     print(">>\tDefault port is: " + str(default_port))
@@ -177,6 +187,7 @@ def getPort(default_port):
 
     answer = ''
 
+    # Verify user input data
     while (answer not in ['Y', 'N']):
         answer = input(">>\tDo you want to change the port? (y/n)\n<<\t")
         answer = answer.upper()
@@ -198,8 +209,8 @@ def getPort(default_port):
                         continue
 
                     # Validate that input is a port number
-                    # Attention: This function does not check whether reserved ports are entered
-                    
+                    # Warning: This function does not check whether reserved ports are entered
+                    # Warning: This function does not check if the ip in combination with this port is valid
                     if verify_port_number(port=port) == True:
                         verify_port = True
                     else:
@@ -220,6 +231,7 @@ def getPort(default_port):
     return port
 
 
+# Add a specific object to the report document
 def add_to_document(data):
     report_document.append(data)
     return 0
@@ -227,13 +239,13 @@ def add_to_document(data):
 
 # Finally generate a report document
 def generate_report():
-
+    # Add table of contents to the report
     template_document.append(
         Report.build_table_of_contents()
     )
-
     export_document = template_document + report_document
 
+    # Specify document format and generate document finally
     filename = str(session_id) + '.pdf'
     Report.render_document(data=export_document, filename=filename)
 
@@ -264,6 +276,8 @@ async def on_connect(websocket, path):
         return await websocket.close()
 
     charge_point_id = path.strip("/")
+
+    # Create ChargePoint object
     cp = CSMS.ChargePoint(charge_point_id, websocket)
 
     '''

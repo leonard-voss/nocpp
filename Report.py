@@ -1,56 +1,22 @@
-
-#   For PDF merging only
+# Required libraries
 from PyPDF2 import PdfReader, PdfWriter
-
-#   For PDF generator
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import Paragraph
-
-
-title_list = []
-
-chapter_list = []
-
-#   For interaction with the file system
 import os
 
-# Stylesheet for reports
+# Required system files
 import Style
 
-def merge_pdfs(self, report_pdf_name, pdf_to_add, delete_after_merge):
-    # Schritt 1: Öffnen der bestehenden Report-PDF
-    reader1 = PdfReader(report_pdf_name)
-    
-    # Schritt 2: Öffnen der PDF, die hinzugefügt werden soll
-    reader2 = PdfReader(pdf_to_add)
-    
-    # Schritt 3: Erstellen eines PDF-Writers
-    writer = PdfWriter()
-    
-    # Schritt 4: Hinzufügen aller Seiten der bestehenden Report-PDF
-    for page_num in range(len(reader1.pages)):
-        page = reader1.pages[page_num]
-        writer.add_page(page)
-    
-    # Schritt 5: Hinzufügen aller Seiten der PDF, die hinzugefügt werden soll
-    for page_num in range(len(reader2.pages)):
-        page = reader2.pages[page_num]
-        writer.add_page(page)
-    
-    # Schritt 6: Speichern der kombinierten PDF unter dem ursprünglichen Report-PDF-Namen
-    with open(report_pdf_name, 'wb') as output_file:
-        writer.write(output_file)
-    
-    # Schritt 7: Löschen der ursprünglichen PDF, falls gewünscht
-    if delete_after_merge:
-        os.remove(pdf_to_add)
+# Store incoming titles and subtiltes
+title_list = []
+chapter_list = []
 
 
-# Used to create the cover sheet and the table of contents
+# Used to create the static title page (template)
 def build_template(title, subtitle, software_version):
     elements = []
     styles = Style.getSampleStyleSheet()
@@ -83,6 +49,7 @@ def build_template(title, subtitle, software_version):
     return elements
 
 
+# Generate the table of content in the end of the state machine
 def build_table_of_contents():
     elements = []
     styles = Style.getSampleStyleSheet()
@@ -93,6 +60,8 @@ def build_table_of_contents():
     elements.append(Spacer(1, 10))  # Add space after the title
 
     index = 0
+
+    # Load all titles and chapters into the document
 
     for indexitem in range(0, len(title_list)):
         index += 1
@@ -105,18 +74,14 @@ def build_table_of_contents():
             subentry_para = Paragraph((str(indexitem+1) + "." + str(subindex) + "\t" + chapter), style=styles['Heading4'])
             elements.append(subentry_para)
 
-        
-        #for subentry in value:
-        #    subindex += 1
-        #     subentry_para = Paragraph((str(index) + "." + str(subindex) + "\t" + subentry), style=styles['Heading4'])
-        #     elements.append(subentry_para)
         elements.append(Spacer(1, 5))  # Add space after the subtitle
     
     elements.append(PageBreak())
 
     return elements
 
-
+# Most important funtion here:
+# Used to generate documentaion from a Report job
 def build_document(data, insertPageBreakAfter):
     elements = []
 
@@ -185,20 +150,21 @@ def build_document(data, insertPageBreakAfter):
         elements.append(table)
         elements.append(Spacer(1, 12))  # Add space after the table
 
+    # If specified, add a PageBreak
     if insertPageBreakAfter:
         elements.append(PageBreak())
 
     # Build the PDF
     return elements
 
+# Final report generation
 def render_document(data, filename):
-    
+    # Add all entries of the document list to the document
     document = []
-
     for entry in data:
         document.extend(entry)
 
-     # Create a PDF document with margins
+     # Set document settings
     pdf = SimpleDocTemplate(
         filename=filename, 
         pagesize=letter,
@@ -208,6 +174,7 @@ def render_document(data, filename):
         bottomMargin=72
     )
     
+    # Generate PDF document finally
     pdf.build(document)
 
     return 0

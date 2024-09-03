@@ -14,6 +14,7 @@ report_state.IDLE = 0
 report_state.INIT = 1
 report_state.CONFIGURATION = 2
 report_state.GET_CONFIGURATION = 3
+report_state.ATTACKS = 4
 
 # Not sure if we need this feature yet.
 error_state = types.SimpleNamespace()

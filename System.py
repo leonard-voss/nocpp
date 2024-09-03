@@ -38,7 +38,7 @@ def generateSessionToken(length):
 # Initialization function, is called first when the system starts
 def init(title, subtitle, software_version):
     # Console outputs
-    art.tprint(title)
+    #art.tprint(title)
     print(subtitle + "\nVersion: " + software_version, end='\n\n')
     
     # Generate report template (title page)

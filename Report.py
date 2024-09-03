@@ -93,26 +93,29 @@ def build_document(data, insertPageBreakAfter):
     # Define a custom paragraph style for table cells to handle word wrap
     cell_style = ParagraphStyle('cell_style', parent=styles['Normal'], wordWrap=True)
 
-    # Add the title as a heading
-    title = Paragraph(data['title'], topic_style)
-
     # Print each chapter title only one time.
     if data['title'] not in title_list:
+        # Add the title as a heading
         title_list.append(data['title'])
+        title_text = str(title_list.index(data['title']) + 1)
+        title_text = title_text + '. ' + str(data['title'])
+        title = Paragraph(title_text, topic_style)
         elements.append(title)
         elements.append(Spacer(1, 12))  # Add space after the title
 
     # Process each key in the data dictionary
     for key, value in data['data'].items():
-        # Add the key as a heading
-        heading = Paragraph(f"<b>{key}</b>", headline_style)
-
         # Ensure chapter_list has enough sublists
         while len(chapter_list) <= title_list.index(data['title']):
             chapter_list.append([])
 
         if key not in chapter_list[title_list.index(data['title'])]:
             chapter_list[title_list.index(data['title'])].append(key)
+
+        # Add the key as a heading
+        title_index = str(title_list.index(data['title']) + 1)
+        heading_index = str(chapter_list[title_list.index(data['title'])].index(key) + 1)
+        heading = Paragraph(f"<b>{title_index + '.' + heading_index + ' ' + key}</b>", headline_style)
 
         elements.append(heading)
         elements.append(Spacer(1, 12))  # Add space after the heading

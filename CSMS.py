@@ -41,10 +41,16 @@ class ChargePoint(cp):
                 # Information Gathering
                 case Names.state_machine.INFORMATION_GATHERING:
                     await self.getConfiguration()
-                    current_state = Names.state_machine.END
+                    current_state = Names.state_machine.ATTACK_SZENARIOS
 
                 # Attack szenarios
                 case Names.state_machine.ATTACK_SZENARIOS:
+                    # Wrong Data Type
+                    await self.wrongDataType()
+                    
+                    # False Data Length
+
+                    # Missing Parameter
 
                     current_state = Names.state_machine.END
 
@@ -133,6 +139,60 @@ class ChargePoint(cp):
 
         self.printEvent("Get Configuration")
 
+    async def wrongDataType(self):
+        print("Try to send a wrong data type using the UnlockConnector function")
+
+        job_data = dict()
+
+        for i in range(0,2):
+
+
+            data_list = [
+                ["Parameter", "Value"]
+            ]
+
+            data_list.append(['Event', 'UnlockConnector'])
+
+            match(i):
+                case 0:
+                    # 1. Korrekte Nachricht schicken
+                    print("First attempt: correct data type")
+                    action = 'Correct request'
+                    payload = 1
+
+                case 1:
+                    # 2. Manipulierte Nachricht schicken
+                    print("Second attempt: wrong data type")
+                    action = 'Manipulated request'
+                    payload = str(1)
+
+            data_list.append(['Payload', payload])
+            data_list.append(['Type', type(payload)])
+
+            # Example uses the UnlockConnector call
+            request = call.UnlockConnector(payload)
+            data_list.append(['Request', str(request)])
+            
+            try:
+                response = await self.call(request)
+                data_list.append(['Response', str(response)])
+            except Exception as error:
+                print(error)
+                data_list.append(['Error', str(error)])
+                                 
+            job_data[action] = data_list
+                
+        # Generate documentation for this action
+        job = System.create_report_job(
+            title='OCCP Attack: False DataType', 
+            number=Names.report_state.ATTACKS, 
+            data=job_data
+        )
+                    
+        data = Report.build_document(job, insertPageBreakAfter=True)
+        System.add_to_document(data)
+            
+        self.printLine()
 
     '''
         Actions initiated by the Charge Station (client)

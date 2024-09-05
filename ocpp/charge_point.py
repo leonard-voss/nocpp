@@ -208,8 +208,6 @@ class ChargePoint:
 
         """
 
-        self.exit = exit
-
         self.id = id
 
         # The maximum time in seconds it may take for a CP to respond to a
@@ -241,17 +239,13 @@ class ChargePoint:
         return 0
 
     async def start(self):
-        while self.exit != True:
+        while True:
             print("Waiting for message...")
             message = await self._connection.recv()
             LOGGER.info("%s: receive message %s", self.id, message)
 
             await self.route_message(message)
         
-        print("Exit Message Listining...")
-        self._connection.close()
-        return 0
-
     async def route_message(self, raw_msg):
         """
         Route a message received from a CP.

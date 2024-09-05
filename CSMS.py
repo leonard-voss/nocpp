@@ -221,11 +221,11 @@ class ChargePoint(cp):
         self.printLine()
 
 
-    async def falseDataLength():
+    async def falseDataLength(self):
         # Cancel Reservation
         pass
 
-    async def falseDataNegative():
+    async def falseDataNegative(self):
         # ChangeAvailability    
         connectorId = -1
         pass

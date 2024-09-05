@@ -24,6 +24,11 @@ number_of_connectors = 1
 
 # Class ChargePoint
 class ChargePoint(cp):
+    # Timeout detection while testing
+    async def timeout_detector(self):
+        # If no timeout is detected, 30 seconds will be used as default value
+        pass
+
 
     # Controller in a state machine to execute attack szenarios
     async def controller(self, session_id, scheduling_pause_time):
@@ -46,11 +51,25 @@ class ChargePoint(cp):
                 # Attack szenarios
                 case Names.state_machine.ATTACK_SZENARIOS:
                     # Wrong Data Type
-                    await self.wrongDataType()
+                    await self.falseDataType()
                     
                     # False Data Length
+                    await self.falseDataLength()
 
-                    # Missing Parameter
+                    # Wrong Data Value (Negative)
+                    await self.falseDataNegative()
+
+                    ''' Additional attack ideas '''
+                    
+                    # Single missing parameter
+
+                    # Additional unexpected parameter
+
+                    # All missing parameter
+
+                    # Add Parameter if not required
+
+                    # Code Injection
 
                     current_state = Names.state_machine.END
 
@@ -139,12 +158,13 @@ class ChargePoint(cp):
 
         self.printEvent("Get Configuration")
 
-    async def wrongDataType(self):
+    async def falseDataType(self):
+        # Uses UnlockConnector message
         print("Try to send a wrong data type using the UnlockConnector function")
 
         job_data = dict()
 
-        for i in range(0,2):
+        for i in range(0,3):
 
 
             data_list = [
@@ -163,8 +183,14 @@ class ChargePoint(cp):
                 case 1:
                     # 2. Manipulierte Nachricht schicken
                     print("Second attempt: wrong data type")
-                    action = 'Manipulated request'
+                    action = 'Manipulated request #1'
                     payload = str(1)
+
+                case 2:
+                    # 3. Manipulierte Nachricht schicken
+                    print("Second attempt: wrong data type")
+                    action = 'Manipulated request #2'
+                    payload = float(1)
 
             data_list.append(['Payload', payload])
             data_list.append(['Type', type(payload)])
@@ -184,7 +210,7 @@ class ChargePoint(cp):
                 
         # Generate documentation for this action
         job = System.create_report_job(
-            title='OCCP Attack: False DataType', 
+            title='Attack: False DataType', 
             number=Names.report_state.ATTACKS, 
             data=job_data
         )
@@ -193,6 +219,16 @@ class ChargePoint(cp):
         System.add_to_document(data)
             
         self.printLine()
+
+
+    async def falseDataLength():
+        # Cancel Reservation
+        pass
+
+    async def falseDataNegative():
+        # ChangeAvailability    
+        connectorId = -1
+        pass
 
     '''
         Actions initiated by the Charge Station (client)

@@ -249,6 +249,11 @@ def generate_report():
     filename = str(session_id) + '.pdf'
     Report.render_document(data=export_document, filename=filename)
 
+# No use yet
+def kill_all_tasks():
+    tasks = asyncio.all_tasks()
+    for task in tasks:
+        task.cancel()
 
 # This function permanently monitors the connection to the charging station
 async def on_connect(websocket, path):
@@ -291,9 +296,24 @@ async def on_connect(websocket, path):
     )
 
     # Task to read incoming OCPP messages
-    start_task = asyncio.create_task(
+    ocpp_messages_task = asyncio.create_task(
         cp.start()
     )
 
-    await controller_task
-    await start_task
+    timeout_detection_task = asyncio.create_task(
+        cp.timeout_detector()
+    )
+
+    # Old scheduling process, works
+    #await controller_task
+    #await timeout_detection_task
+    #await ocpp_messages_task
+
+    # New shutdown and scheduling process (not tested))
+    await asyncio.gather(controller_task)
+
+    ocpp_messages_task.cancel()
+    timeout_detection_task.cancel()
+
+    await ocpp_messages_task
+    await timeout_detection_task

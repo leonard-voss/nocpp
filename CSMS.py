@@ -41,15 +41,18 @@ class ChargePoint(cp):
             match current_state:
                 # Init state -> Currently no function
                 case Names.state_machine.INIT:
+                    print("\n>> CONTROLLER STATE MACHINE: INIT\n")
                     current_state = Names.state_machine.INFORMATION_GATHERING
 
                 # Information Gathering
                 case Names.state_machine.INFORMATION_GATHERING:
+                    print("\n>> CONTROLLER STATE MACHINE: INFORMATION GATHERING\n")
                     await self.getConfiguration()
                     current_state = Names.state_machine.ATTACK_SZENARIOS
 
                 # Attack szenarios
                 case Names.state_machine.ATTACK_SZENARIOS:
+                    print("\n>> CONTROLLER STATE MACHINE: ATTACK SZENARIOS\n")
                     # Wrong Data Type
                     await self.falseDataType()
                     
@@ -75,12 +78,14 @@ class ChargePoint(cp):
 
                 # End state
                 case Names.state_machine.END:
+                    print("\n>> CONTROLLER STATE MACHINE: END\n")
                     #   Generate report document (PDF-File) and exit controller
                     System.generate_report()
                     break
 
                 # Default state -> Used as undefined state case
                 case _:
+                    print("\n>> CONTROLLER STATE MACHINE: UNDEFINED\n")
                     print("[" + str(datetime.datetime.now()) + "]:\t" + "(Controller)\t Undefined state --> Exit")
                     break
 

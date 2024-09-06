@@ -1,7 +1,6 @@
 # Libraries
 try:
     # General required libraries
-    import websockets
     import asyncio
     import logging
     from datetime import datetime
@@ -110,15 +109,12 @@ async def main():
     # Store the final WebSocket configuration into the report document
     System.store_configuration(SOFTWARE_VERSION, PROTOCOL_VERSION, ip_address, port, bootTimestamp)
 
-    print('\nOCPP connection and State Machine')
-    
-    # Initialization of OCPP connection and State Machine
-    server = await websockets.serve(
-        System.on_connect, ip_address, port, subprotocols=[PROTOCOL_VERSION]
-    )
+    await System.startWebSocketServer()
 
-    logging.info("Server Started listening to new connections...")
-    await server.wait_closed()
+    print('\nFinished Programm execution. You can close this window now.')
+
+    while True:
+        pass
 
 # Execute main function
 asyncio.run(main())

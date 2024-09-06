@@ -7,6 +7,7 @@ import random
 import types
 import sys
 from art import *
+import websockets
 
 # Required system files
 import Report
@@ -23,6 +24,12 @@ report_document = []
 # to the report document in the final generation process 
 template_document = []
 
+websocketServer = None
+
+ip_address_websocket_server = None
+port_websocket_server = None
+protocol_version_websocket_server = None
+
 # Generate a random session token with a specific length
 def generateSessionToken(length):
     # Input characters that are allowed for random name generation
@@ -33,7 +40,6 @@ def generateSessionToken(length):
         token = token + str(random.choice(letters))
 
     return token
-
 
 # Initialization function, is called first when the system starts
 def init(title, subtitle, software_version):
@@ -58,6 +64,30 @@ def init(title, subtitle, software_version):
     print(">>\tSession ID: " + str(session_id))
 
     return Names.error_state.NO_ERROR
+
+async def startWebSocketServer():
+
+    print("\n>>\tStarting Websocket Server...\n")
+
+    global websocketServer
+    websocketServer = await websockets.serve(
+        on_connect, ip_address_websocket_server, port_websocket_server, subprotocols=[protocol_version_websocket_server]
+    )
+
+    print("\n>>\tWebsocket  Server started successfully...\n")
+
+    logging.info("Server Started successfully, listening to new connections...")
+    
+    await websocketServer.wait_closed()
+
+async def killWebSocketServer():
+    print(">>\tTry to shutdown WebSocket Server")
+    global websocketServer
+    websocketServer.close()
+    #await websocketServer.wait_closed()
+    print("WebSocket Server shutdown complete")
+
+
 
 
 # Used to store the WebSocket and application configuration to the report document
@@ -86,6 +116,12 @@ def store_configuration(system_version, protocol_version, ip_address, port, boot
     report_document.append(
         Report.build_document(job, insertPageBreakAfter=True)
     )
+
+    global ip_address_websocket_server, port_websocket_server, protocol_version_websocket_server
+
+    ip_address_websocket_server = ip_address
+    port_websocket_server = port
+    protocol_version_websocket_server = protocol_version
 
     return 0
 
@@ -249,11 +285,6 @@ def generate_report():
     filename = str(session_id) + '.pdf'
     Report.render_document(data=export_document, filename=filename)
 
-# No use yet
-def kill_all_tasks():
-    tasks = asyncio.all_tasks()
-    for task in tasks:
-        task.cancel()
 
 # This function permanently monitors the connection to the charging station
 async def on_connect(websocket, path):
@@ -300,20 +331,22 @@ async def on_connect(websocket, path):
         cp.start()
     )
 
-    timeout_detection_task = asyncio.create_task(
-        cp.timeout_detector()
-    )
+    #timeout_detection_task = asyncio.create_task(
+    #    cp.timeout_detector()
+    #)
 
-    # Old scheduling process, works
-    #await controller_task
-    #await timeout_detection_task
-    #await ocpp_messages_task
+    # Scheduling and Shutdown process
+    await controller_task
 
-    # New shutdown and scheduling process (not tested))
-    await asyncio.gather(controller_task)
+    print(">>\t Collecting remaining data and shutdown application")
+    await asyncio.sleep(10)
+
+    # Shutdown server
+    await killWebSocketServer()
 
     ocpp_messages_task.cancel()
-    timeout_detection_task.cancel()
+    
+    #timeout_detection_task.cancel()
 
     await ocpp_messages_task
-    await timeout_detection_task
+    #await timeout_detection_task

@@ -7,6 +7,7 @@ state_machine.INIT = 0
 state_machine.INFORMATION_GATHERING = 1
 state_machine.ATTACK_SZENARIOS = 2
 state_machine.END = 3
+state_machine.TIMEOUT = 4
 
 #   Variable to generate reports
 report_state = types.SimpleNamespace()

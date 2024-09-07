@@ -24,20 +24,20 @@ number_of_connectors = 1
 
 # Class ChargePoint
 class ChargePoint(cp):
-    # Timeout detection while testing
-    async def timeout_detector(self):
-        # If no timeout is detected, 30 seconds will be used as default value
-        pass
-
-
     # Controller in a state machine to execute attack szenarios
     async def controller(self, session_id, scheduling_pause_time):
         # Initialize the State Machine
         current_state = Names.state_machine.INIT
+        timeout_detected = False
         
         # Run State Machine in a infinite loop
         while True:
             # State machine for executing tests
+
+            if (System.getTimeOutState() == True) and (timeout_detected == False):
+                timeout_detected = True
+                current_state = Names.state_machine.TIMEOUT
+
             match current_state:
                 # Init state -> Currently no function
                 case Names.state_machine.INIT:
@@ -81,8 +81,14 @@ class ChargePoint(cp):
                     print("\n>> CONTROLLER STATE MACHINE: END\n")
                     #   Generate report document (PDF-File) and exit controller
                     System.generate_report()
+                    await asyncio.sleep(5)
                     break
 
+                case Names.state_machine.TIMEOUT:
+                    print("\n>> CONTROLLER STATE MACHINE: TIMEOUT\n")
+                    self.report_store_timeout()
+                    current_state = Names.state_machine.END
+                    
                 # Default state -> Used as undefined state case
                 case _:
                     print("\n>> CONTROLLER STATE MACHINE: UNDEFINED\n")
@@ -163,6 +169,34 @@ class ChargePoint(cp):
 
         self.printEvent("Get Configuration")
 
+
+    def report_store_timeout(self):
+        print("Store timeout in report document")
+
+        job_data = dict()
+
+        data_list = [
+            ["Parameter", "Value"]
+        ]
+
+        data_list.append(['Intervall', str(timeout_interval)])
+                      
+        job_data['Timeout'] = data_list
+                
+        # Generate documentation for this action
+        job = System.create_report_job(
+            title='Error', 
+            number=Names.report_state.ATTACKS, 
+            data=job_data
+        )
+                    
+        data = Report.build_document(job, insertPageBreakAfter=True)
+        System.add_to_document(data)
+            
+        self.printLine()
+        return 0
+
+
     async def falseDataType(self):
         # Uses UnlockConnector message
         print("Try to send a wrong data type using the UnlockConnector function")
@@ -170,6 +204,9 @@ class ChargePoint(cp):
         job_data = dict()
 
         for i in range(0,3):
+
+            if System.getTimeOutState() == True:
+                break
 
 
             data_list = [
@@ -206,11 +243,12 @@ class ChargePoint(cp):
             
             try:
                 response = await self.call(request)
-                data_list.append(['Response', str(response)])
+                data_list.append(['Response (OK)', str(response)])
+            except TimeoutError:
+                data_list.append(['Response (TIMEOUT)', 'CS timeout'])  
             except Exception as error:
                 print(error)
-                data_list.append(['Error', str(error)])
-                                 
+                data_list.append(['Response (ERROR)', str(error)])                       
             job_data[action] = data_list
                 
         # Generate documentation for this action

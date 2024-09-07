@@ -80,8 +80,8 @@ def build_table_of_contents():
 
     return elements
 
-# Most important funtion here:
-# Used to generate documentaion from a Report job
+# Most important function here:
+# Used to generate documentation from a Report job
 def build_document(data, insertPageBreakAfter):
     elements = []
 
@@ -93,12 +93,10 @@ def build_document(data, insertPageBreakAfter):
     # Define a custom paragraph style for table cells to handle word wrap
     cell_style = ParagraphStyle('cell_style', parent=styles['Normal'], wordWrap=True)
 
-    # Print each chapter title only one time.
+    # Print each chapter title only one time
     if data['title'] not in title_list:
-        # Add the title as a heading
         title_list.append(data['title'])
-        title_text = str(title_list.index(data['title']) + 1)
-        title_text = title_text + '. ' + str(data['title'])
+        title_text = str(title_list.index(data['title']) + 1) + '. ' + str(data['title'])
         title = Paragraph(title_text, topic_style)
         elements.append(title)
         elements.append(Spacer(1, 12))  # Add space after the title
@@ -138,7 +136,7 @@ def build_document(data, insertPageBreakAfter):
         table = Table(table_data, colWidths=col_widths)
 
         # Add a table style with word wrap
-        table.setStyle(TableStyle([
+        table_style = TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.teal),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
@@ -147,7 +145,22 @@ def build_document(data, insertPageBreakAfter):
             ('BACKGROUND', (0, 1), (-1, -1), colors.white),
             ('GRID', (0, 0), (-1, -1), 1, colors.black),
             ('WORDWRAP', (0, 0), (-1, -1), True),  # Enable word wrap for all cells
-        ]))
+        ])
+
+        # Zeilen prüfen und ggf. rot einfärben
+        for i, row in enumerate(table_data):
+            if any(isinstance(cell, Paragraph) and ("Response (OK)" in cell.text) for cell in row):
+                table_style.add('BACKGROUND', (0, i), (-1, i), colors.green)
+                table_style.add('TEXTCOLOR', (0, i), (-1, i), colors.whitesmoke)
+            if any(isinstance(cell, Paragraph) and ("Response (ERROR)" in cell.text) for cell in row):
+                table_style.add('BACKGROUND', (0, i), (-1, i), colors.red)
+                table_style.add('TEXTCOLOR', (0, i), (-1, i), colors.whitesmoke) 
+            if any(isinstance(cell, Paragraph) and ("Response (TIMEOUT)" in cell.text) for cell in row):
+                table_style.add('BACKGROUND', (0, i), (-1, i), colors.yellow)
+                table_style.add('TEXTCOLOR', (0, i), (-1, i), colors.whitesmoke)   
+
+        # Tabelle mit Stil anwenden
+        table.setStyle(table_style)
 
         # Add the table to the elements
         elements.append(table)

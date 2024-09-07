@@ -14,6 +14,8 @@ from ocpp.routing import create_route_map
 import datetime
 import socket
 
+import System
+
 LOGGER = logging.getLogger("ocpp")
 
 
@@ -416,6 +418,7 @@ class ChargePoint:
                     call.unique_id, self._response_timeout
                 )
             except asyncio.TimeoutError:
+                await System.triggerTimeOutError(f"Waited {self._response_timeout}s for response on {call.to_json()}.")
                 raise asyncio.TimeoutError(
                     f"Waited {self._response_timeout}s for response on "
                     f"{call.to_json()}."

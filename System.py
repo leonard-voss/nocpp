@@ -30,6 +30,8 @@ ip_address_websocket_server = None
 port_websocket_server = None
 protocol_version_websocket_server = None
 
+timeout = False
+
 # Generate a random session token with a specific length
 def generateSessionToken(length):
     # Input characters that are allowed for random name generation
@@ -65,6 +67,18 @@ def init(title, subtitle, software_version):
 
     return Names.error_state.NO_ERROR
 
+async def triggerTimeOutError(exception):
+    print("TIMEOUT DETECTED:")
+    global timeout 
+    timeout = True
+    print(str(exception))
+
+
+def getTimeOutState():
+    global timeout
+    return timeout
+
+
 async def startWebSocketServer():
 
     print("\n>>\tStarting Websocket Server...\n")
@@ -77,9 +91,8 @@ async def startWebSocketServer():
     print("\n>>\tWebsocket  Server started successfully...\n")
 
     logging.info("Server Started successfully, listening to new connections...")
-    
     await websocketServer.wait_closed()
-
+    
 async def killWebSocketServer():
     print(">>\tTry to shutdown WebSocket Server")
     global websocketServer
@@ -284,6 +297,7 @@ def generate_report():
     # Specify document format and generate document finally
     filename = str(session_id) + '.pdf'
     Report.render_document(data=export_document, filename=filename)
+    print(">>\tDocument rendered successfully")
 
 
 # This function permanently monitors the connection to the charging station
@@ -331,22 +345,16 @@ async def on_connect(websocket, path):
         cp.start()
     )
 
-    #timeout_detection_task = asyncio.create_task(
-    #    cp.timeout_detector()
-    #)
-
     # Scheduling and Shutdown process
     await controller_task
 
     print(">>\t Collecting remaining data and shutdown application")
     await asyncio.sleep(10)
 
-    # Shutdown server
-    await killWebSocketServer()
+    if getTimeOutState() != True:
+        # Shutdown server
+        await killWebSocketServer()
 
-    ocpp_messages_task.cancel()
-    
-    #timeout_detection_task.cancel()
+        ocpp_messages_task.cancel()
 
-    await ocpp_messages_task
-    #await timeout_detection_task
+        await ocpp_messages_task

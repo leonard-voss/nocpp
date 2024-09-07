@@ -7,11 +7,14 @@ from ocpp.v16.enums import Action, RegistrationStatus
 from datetime import datetime
 import time
 import asyncio
+import random
+import string
 
 # Import required system files
 import System
 import Names
 import Report
+
 
 # If an event has been monitored before, do not add it to the report document again
 events_monitored = []
@@ -230,7 +233,7 @@ class ChargePoint(cp):
 
                 case 2:
                     # 3. Manipulierte Nachricht schicken
-                    print("Second attempt: wrong data type")
+                    print("Third attempt: wrong data type")
                     action = 'Manipulated request #2'
                     payload = float(1)
 
@@ -263,15 +266,144 @@ class ChargePoint(cp):
             
         self.printLine()
 
+    async def generateRandomString(self):
+        length = random.randint(0,500)
+        random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+        return random_string
 
     async def falseDataLength(self):
         # Cancel Reservation
-        pass
+        print("Try to send a wrong length using the CancelReservation function")
+
+        job_data = dict()
+
+        for i in range(0,4):
+
+            if System.getTimeOutState() == True:
+                break
+
+
+            data_list = [
+                ["Parameter", "Value"]
+            ]
+
+            data_list.append(['Event', 'CancelReservation'])
+
+            match(i):
+                case 0:
+                    # 1. Korrekte Nachricht schicken
+                    print("First attempt: correct data type")
+                    action = 'Correct request'
+                    payload = 1
+
+                case 1:
+                    # 2. Manipulierte Nachricht schicken
+                    print("Second attempt: random String")
+                    action = 'Manipulated request #1'
+                    payload = await self.generateRandomString()
+
+                case 2:
+                    # 3. Manipulierte Nachricht schicken
+                    print("Third attempt: random String")
+                    action = 'Manipulated request #2'
+                    payload = await self.generateRandomString()
+
+                case 3:
+                    # 4. Manipulierte Nachricht schicken
+                    print("Fourth attempt: empty String")
+                    action = 'Manipulated request #3'
+                    payload = '0'
+
+            data_list.append(['Payload', payload])
+            data_list.append(['Type', type(payload)])
+
+            # Example uses the UnlockConnector call
+            request = call.CancelReservation(payload)
+            data_list.append(['Request', str(request)])
+            
+            try:
+                response = await self.call(request)
+                data_list.append(['Response (OK)', str(response)])
+            except TimeoutError:
+                data_list.append(['Response (TIMEOUT)', 'CS timeout'])  
+            except Exception as error:
+                print(error)
+                data_list.append(['Response (ERROR)', str(error)])                       
+            job_data[action] = data_list
+                
+        # Generate documentation for this action
+        job = System.create_report_job(
+            title='Attack: False DataLength', 
+            number=Names.report_state.ATTACKS, 
+            data=job_data
+        )
+                    
+        data = Report.build_document(job, insertPageBreakAfter=True)
+        System.add_to_document(data)
+            
+        self.printLine()
+        
 
     async def falseDataNegative(self):
         # ChangeAvailability    
-        connectorId = -1
-        pass
+        print("Try to send false data (negative) using the ChangeAvailability function")
+
+        job_data = dict()
+
+        for i in range(0,2):
+
+            if System.getTimeOutState() == True:
+                break
+
+
+            data_list = [
+                ["Parameter", "Value"]
+            ]
+
+            data_list.append(['Event', 'CancelReservation'])
+
+            match(i):
+                case 0:
+                    # 1. Korrekte Nachricht schicken
+                    print("First attempt: correct value")
+                    action = 'Correct request'
+                    payload = 1
+
+                case 1:
+                    # 2. Manipulierte Nachricht schicken
+                    print("Second attempt: negative value")
+                    action = 'Manipulated request #1'
+                    payload = -1
+
+
+            data_list.append(['Payload', payload])
+            data_list.append(['Type', type(payload)])
+
+            # Example uses the UnlockConnector call
+            request = call.CancelReservation(payload)
+            data_list.append(['Request', str(request)])
+            
+            try:
+                response = await self.call(request)
+                data_list.append(['Response (OK)', str(response)])
+            except TimeoutError:
+                data_list.append(['Response (TIMEOUT)', 'CS timeout'])  
+            except Exception as error:
+                print(error)
+                data_list.append(['Response (ERROR)', str(error)])                       
+            job_data[action] = data_list
+                
+        # Generate documentation for this action
+        job = System.create_report_job(
+            title='Attack: falseDataNegative', 
+            number=Names.report_state.ATTACKS, 
+            data=job_data
+        )
+                    
+        data = Report.build_document(job, insertPageBreakAfter=True)
+        System.add_to_document(data)
+            
+        self.printLine()
 
     '''
         Actions initiated by the Charge Station (client)

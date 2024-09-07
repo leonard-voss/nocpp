@@ -5,7 +5,6 @@ from ocpp.v16 import ChargePoint as cp
 from ocpp.v16 import call_result, call
 from ocpp.v16.enums import Action, RegistrationStatus
 from datetime import datetime
-import time
 import asyncio
 import random
 import string

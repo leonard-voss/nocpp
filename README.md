@@ -18,13 +18,10 @@ NOCPP requires several Python libraries:
   <li>socket</li>
   <li>reportlab</li>
   <li>asyncio</li>
-  <li>time</li>
   <li>logging</li>
   <li>random</li>
   <li>types</li>
-  <li>art</li>
   <li>PyPDF2</li>
-  <li>os</li>
   <li>datetime</li>
 </ul>
 

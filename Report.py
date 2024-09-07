@@ -69,6 +69,7 @@ def build_table_of_contents():
         elements.append(entry_para)
         
         subindex = 0
+
         for chapter in chapter_list[indexitem]:        
             subindex += 1
             subentry_para = Paragraph((str(indexitem+1) + "." + str(subindex) + "\t" + chapter), style=styles['Heading4'])

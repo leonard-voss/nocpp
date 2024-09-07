@@ -59,24 +59,26 @@ class ChargePoint(cp):
                     print('\n\n***\tCONTROLLER STATE MACHINE: ATTACK SZENARIOS\t***\n\n')
                     # Wrong Data Type
                     await self.falseDataType()
+
+                    if (System.getTimeOutState() == True):
+                        continue
                     
                     # False Data Length
                     await self.falseDataLength()
 
+                    if (System.getTimeOutState() == True):
+                        continue
+
                     # Wrong Data Value (Negative)
                     await self.falseDataNegative()
                     
+                    if (System.getTimeOutState() == True):
+                        continue
+
                     # Code Injection, testing if CS Backend can be attacked with Python or Java code
                     await self.codeInjection()
                     
-                    ''' Additional attack ideas '''                    
-                    # Additional unexpected parameter
-
-                    # Incorrect Parameter
-
-                    # Add Parameter if not required
-
-
+                    # Additional and missing parameters will crash the program -> not included
 
                     current_state = Names.state_machine.END
 
@@ -90,6 +92,7 @@ class ChargePoint(cp):
 
                 case Names.state_machine.TIMEOUT:
                     print('\n\n***\tCONTROLLER STATE MACHINE: TIMEOUT\t***\n\n')
+                    await System.killWebSocketServer()
                     current_state = Names.state_machine.END
                     
                 # Default state -> Used as undefined state case
@@ -405,7 +408,7 @@ class ChargePoint(cp):
                 case 1:
                     # 1. Korrekte Nachricht schicken
                     print("\n\n>>\tSecond attempt: Shell injection -> Delete File System")
-                    action = 'Python code injection (Delete File System)'
+                    action = 'Shell injection (Delete File System)'
                     payload = "`; rm -rf /`"
 
                 case 2:

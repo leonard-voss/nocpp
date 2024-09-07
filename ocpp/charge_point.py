@@ -243,7 +243,10 @@ class ChargePoint:
     async def start(self):
         while True:
             print("Waiting for message...")
-            message = await self._connection.recv()
+            try:
+                message = await self._connection.recv()
+            except Exception as error:
+                break
             LOGGER.info("%s: receive message %s", self.id, message)
 
             await self.route_message(message)

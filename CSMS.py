@@ -56,28 +56,36 @@ class ChargePoint(cp):
                 # Attack szenarios
                 case Names.state_machine.ATTACK_SZENARIOS:
                     print('\n\n***\tCONTROLLER STATE MACHINE: ATTACK SZENARIOS\t***\n\n')
-                    # Wrong Data Type
-                    await self.falseDataType()
-
-                    if (System.getTimeOutState() == True):
-                        continue
                     
-                    # False Data Length
-                    await self.falseDataLength()
+                    for attack in range(0,4):
+                        
+                        if (System.getTimeOutState() == True):
+                            break
 
-                    if (System.getTimeOutState() == True):
-                        continue
+                        match attack:
 
-                    # Wrong Data Value (Negative)
-                    await self.falseDataNegative()
-                    
-                    if (System.getTimeOutState() == True):
-                        continue
+                            case 0:
+                                # Wrong Data Type
+                                await self.falseDataType()
 
-                    # Code Injection, testing if CS Backend can be attacked with Python or Java code
-                    await self.codeInjection()
-                    
-                    # Additional and missing parameters will crash the program -> not included
+                            case 1:                    
+                                # False Data Length
+                                await self.falseDataLength()
+
+                            case 2:
+                                # Wrong Data Value (Negative)
+                                await self.falseDataNegative()
+                                
+                            case 3:
+                                # Code Injection, test if Backend can be attacked
+                                # via Python code, Shell injection or Cross-Site-Scripting
+                                await self.codeInjection()
+
+                            case _:
+                                print("ERROR: Undefined Attack Szenario")
+                                break
+                                
+                            # Additional and missing parameters will crash the program -> not included
 
                     current_state = Names.state_machine.END
 

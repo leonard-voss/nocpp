@@ -98,7 +98,8 @@ class ChargePoint(cp):
                 case _:
                     print('\n\n***\tCONTROLLER STATE MACHINE: UNDEFINED\t***\n\n')
                     print("[" + str(datetime.datetime.now()) + "]:\t" + "(Controller)\t Undefined state --> Exit")
-                    break
+                    await System.killWebSocketServer()
+                    current_state = Names.state_machine.END
 
             # You need to pause the state machine, because otherwise the
             # listining for ocpp action will not continue correctly

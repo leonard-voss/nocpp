@@ -1,6 +1,11 @@
 # nocpp (No Charge Point Protocol)
 ## :clipboard: Description
-Application for targeted pentesting of a charging station. The application tests the OCPP link between the Charge Point (CP) and the Charge Station Management System (CSMS). In addition to various fuzzing attack scenarios, information gathering is also implemented.
+NOCPP is the result of a project at the Ostwestfalen-Lippe University of Applied Sciences. It was developed by students of the Computer Engineering course. The client for this project is the company rt-solutions.de, which provides advice and solutions in information and OT security.
+
+[![Logo of rt-solutions.de](https://rt-solutions.de/wp-content/uploads/2023/12/rt-logo.svg)](https://rt-solutions.de/kompetenzen/ot-security/)
+
+
+NOCPP is an application for targeted pentesting of a charging station. The OCPP connection between the Charge Point (CP) and the Charge Station Management System (CSMS) is used as an attack parameter. In addition to various selected fuzzing attack scenarios, information gathering is also implemented. New attack scenarios can be easily implemented using a state machine. The results of the attacks, configurations and tests are exported in a results PDF.
 
 This project is based on the Open-Source OCPP implementation in Python by The Mobility House, which you can find [here](https://github.com/mobilityhouse/ocpp).
 
@@ -8,24 +13,14 @@ This project is based on the Open-Source OCPP implementation in Python by The Mo
 
 Currently OCPP 1.6-J (JSON) is the only supported version.
 
+The application was tested on a charging station from the manufacturer Weidmüller, model AC Smart Advanced.
+
 ## :warning: System Requirements
 
 Please make sure you use Python version 3.10 or higher.  
 
 This application requires a modified version of the ocpp and the websockets libraries.
 Both extensions are included in this repository.
-
-NOCPP also requires several additional Python3 libraries:
-<ul>
-  <li>socket</li>
-  <li>reportlab</li>
-  <li>asyncio</li>
-  <li>logging</li>
-  <li>random</li>
-  <li>types</li>
-  <li>PyPDF2</li>
-  <li>datetime</li>
-</ul>
 
 ## :white_check_mark: Getting Started
 

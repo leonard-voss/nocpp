@@ -1,4 +1,3 @@
-# Required libraries
 from PyPDF2 import PdfReader, PdfWriter
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
@@ -7,7 +6,7 @@ from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import Paragraph
 
-# Required system files
+# Required project files
 import Style
 
 # Store incoming titles and subtiltes
@@ -39,9 +38,9 @@ def build_template(title, subtitle, software_version):
     abstract_para = Paragraph(str(abstract), style=styles['Normal'])
     
     elements.append(title_para)
-    elements.append(Spacer(1, 40))  # Add space after the title
+    elements.append(Spacer(1, 40))  
     elements.append(subtitle_para)
-    elements.append(Spacer(1, 20))  # Add space after the subtitle
+    elements.append(Spacer(1, 20))
     elements.append(abstract_para)
     elements.append(PageBreak())
     
@@ -74,15 +73,19 @@ def build_table_of_contents():
             subentry_para = Paragraph((str(indexitem+1) + "." + str(subindex) + "\t" + chapter), style=styles['Heading4'])
             elements.append(subentry_para)
 
-        elements.append(Spacer(1, 5))  # Add space after the subtitle
+        elements.append(Spacer(1, 5))
     
     elements.append(PageBreak())
 
     return elements
 
-# Most important function here:
-# Used to generate documentation from a Report job
+
 def build_document(data, insertPageBreakAfter):
+    '''
+    Most important function here:
+    Used to generate documentation from a Report job
+    '''
+
     elements = []
 
     # Get the default stylesheet
@@ -147,7 +150,7 @@ def build_document(data, insertPageBreakAfter):
             ('WORDWRAP', (0, 0), (-1, -1), True),  # Enable word wrap for all cells
         ])
 
-        # Zeilen prüfen und ggf. rot einfärben
+        # Color coding of timeouts, incorrect requests and valid requests.
         for i, row in enumerate(table_data):
             if any(isinstance(cell, Paragraph) and ("Response (OK)" in cell.text) for cell in row):
                 table_style.add('BACKGROUND', (0, i), (-1, i), colors.green)
@@ -159,12 +162,11 @@ def build_document(data, insertPageBreakAfter):
                 table_style.add('BACKGROUND', (0, i), (-1, i), colors.yellow)
                 table_style.add('TEXTCOLOR', (0, i), (-1, i), colors.whitesmoke)   
 
-        # Tabelle mit Stil anwenden
         table.setStyle(table_style)
 
         # Add the table to the elements
         elements.append(table)
-        elements.append(Spacer(1, 12))  # Add space after the table
+        elements.append(Spacer(1, 12))
 
     # If specified, add a PageBreak
     if insertPageBreakAfter:

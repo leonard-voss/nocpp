@@ -1,3 +1,8 @@
+
+'''
+This file is a version of the styles file from the reportlab library that has been adapted to generate the final report.
+'''
+
 #Copyright ReportLab Europe Ltd. 2000-2017
 #see license.txt for license details
 #history https://hg.reportlab.com/hg-public/reportlab/log/tip/src/reportlab/lib/styles.py

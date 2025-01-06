@@ -17,15 +17,16 @@ The application was tested on a charging station from the manufacturer Weidmüll
 
 ## :warning: System Requirements
 
-Please make sure you use Python version 3.10 or higher.  
+Please make sure you use Python version 3.10 or higher.
 
-This application requires a modified version of the ocpp and the websockets libraries.
-Both extensions are included in this repository.
+NOCPP only works with the websockets library in the specific version 12.0.
 
 ## :white_check_mark: Getting Started
 
+At this point I would like to emphasize once again that this software is only a prototype as a proof of concept. It cannot therefore be ruled out that it may contain errors.
+
 To execute the application, run Main.py.
-You can use the following console arguments:
+For automation, the following console arguments can be passed to the script for execution.
 <ul>
   <li>skip-websocket-config (Skips the manual WebSocket setup and uses default values. This argument blocks the set arguments.)</li>
   <li>set-ip-address=[ipv4-address] (Set a specific IPv4 Address, uses default if the specified address is invalid.)</li>
@@ -35,3 +36,7 @@ You can use the following console arguments:
 ## :bomb: Attack Szenarios
 
 NOCPP uses various attack techniques, including inserting different data types and data values, as well as code injection. Please note that the effectiveness of this tool varies depending on the charging station. NOCPP recognizes successful system requests as well as error messages. In the event of a connection interruption (timeout), this is noted and the program is safely shut down. Due to the asynchronous program structure, this process can take significantly longer than the generation of the result PDF.
+
+The execution of the attack scenarios can be variably adapted in the state machine contained in the CSMS.py file. New attack scenarios can also be easily added.
+
+For the implementation of the attack scenarios, I recommend using the OCPP [specification](https://openchargealliance.org/protocols/open-charge-point-protocol/). However, the implementation on the respective charging stations can differ (significantly).

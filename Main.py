@@ -1,12 +1,15 @@
-# Libraries
+
+# Check if the most important libraries and project files for this project are present.
 try:
     # General required libraries
     import asyncio
     import logging
     from datetime import datetime
     import sys
+    import ocpp
+    import websockets
 
-    # Files required by the application
+    #Necessary project files
     import System
 
 except ModuleNotFoundError:
@@ -15,16 +18,17 @@ except ModuleNotFoundError:
     import sys
     sys.exit(1)
 
+
 '''
 Constants and global variables
 '''
 
-# Application settings
+# General application settings
 TITLE = 'No Charge Point Protocol'
 SUBTITLE = 'NOCPP'
 SOFTWARE_VERSION = '1.0'
 
-# Default values
+# Default websocket configuration
 DEFAULT_IP_ADDRESS = '10.8.0.46'
 DEFAULT_PORT = 9002
 PROTOCOL_VERSION = 'ocpp1.6'
@@ -37,39 +41,42 @@ port = DEFAULT_PORT
 # Fetch boot timestamp
 bootTimestamp = datetime.now()
 
+
+
 async def main():
-    # Start application (document to console and generate template)
+    # Generate template for documentation
     System.init(title=TITLE, subtitle=SUBTITLE, software_version=SOFTWARE_VERSION)
 
     # Setup Logging
-    logging.basicConfig(level=logging.INFO) # If you need more output, change this variable to logging.DEBUG
-
-    # Adjusting the configuration of the WebSocket
-    print('\nWebsocket Configuration')
-
-    ip_address = DEFAULT_IP_ADDRESS
-    port = DEFAULT_PORT
-
-    # WebSocket configuration
+    '''
+    Setup OCPP console logging,
+    change this variable to logging.DEBUG if you need more output information
+    '''
+    logging.basicConfig(level=logging.INFO)
 
     '''
-        General process description and hierarchy for ip and port selection:
+        Websocket configuration, this is the general process description and hierarchy for ip and port selection:
 
         1.  If console argument skip-websocket-config -> use default values
-        2.  If console argument set-(ip-address or port)=[ip-address or port] 
-            is set, use this value for wesocket configuration. If the value is
-            not valid, use automatically default values instead.
+        
+        2.  If console argument set-(ip-address or port)=[ip-address or port] is set, use this value for wesocket configuration. 
+            If the value is not valid, use automatically default values instead.
+        
         3.  Else, ask user to select ip and port manually.
     '''
 
-    # IP Address configuration
+    print('\nWebsocket Configuration')
+
+    # Websocket configuration
     if (SKIP_WEBSOCKET_CONFIGURATION != True) and ('skip-websocket-config' not in sys.argv):
         
+        # Initialization
         ip_console_argument = False
         port_console_argument = False
 
+
+         # IP Address configuration
         for entry in sys.argv:
-            # Detect console argument
             if entry.count('set-ip-address=') == 1:
                 ip_address = entry.replace('set-ip-address=', '')
                 # Verify values used by console argument
@@ -79,12 +86,12 @@ async def main():
                 else:
                     print(">>\tConsole argument value for IP address is invalid. Using manual ip configuration instead.")
 
-        # Manual selection process
         if ip_console_argument == False:
             ip_address = System.getIpAddress(DEFAULT_IP_ADDRESS)
 
+
+        # Websocket port configuration
         for entry in sys.argv:
-            # Detect console argument
             if entry.count('set-port=') == 1:
                 port = entry.replace('set-port=', '')
                 # Verify values used by console argument
@@ -94,25 +101,26 @@ async def main():
                 else:
                     print(">>\tConsole argument value for port number is invalid. Using manual port configuration instead.")
         
-        # Manual selection process
         if port_console_argument == False:
             port = System.getPort(DEFAULT_PORT)
 
     else:
-        # Constant / setting used in Main.py
+        # Skip the websocket configuration and use the predefined values
         print(">>\tDEBUG-Option: Skip WebSocket Configuration, using Default configuration")
 
 
     print(">>\tIP-Address: " + str(ip_address))
     print(">>\tPort number: " + str(port))
 
-    # Store the final WebSocket configuration into the report document
+    # Final documentation of the websocket configuration used
     System.store_configuration(SOFTWARE_VERSION, PROTOCOL_VERSION, ip_address, port, bootTimestamp)
 
+    # This asynchronous call is only executed when the program ends
     await System.startWebSocketServer()
 
     print('\nFinished Programm execution. You can close this window now.')
 
+    # Infinite loop at the end of the program, user can close program
     while True:
         pass
 

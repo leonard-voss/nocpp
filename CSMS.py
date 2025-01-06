@@ -1,4 +1,3 @@
-# Import libraries
 from ocpp.routing import on, after
 import ocpp.v16
 from ocpp.v16 import ChargePoint as cp
@@ -10,39 +9,50 @@ import random
 import string
 import sys
 
-# Import required system files
+# Import required project files
+
 import System
 import Names
 import Report
 
-
-# If an event has been monitored before, do not add it to the report document again
+'''
+This list is used to store events that have already been documented 
+and to prevent duplicate documentation.
+'''
 events_monitored = []
 
-# Global variables used in different attack szenarios
-# Only default values, modified by GetConfiguration action
+'''
+These variables are needed in various attack scenarios. 
+The initial value is overwritten by the configuration when the program starts.
+'''
 timeout_interval = 30
 heartbeat_interval = 10
 number_of_connectors = 1
 
-# Class ChargePoint
 class ChargePoint(cp):
-    # Controller in a state machine to execute attack szenarios
+    # Sequence control that carries out the attacks sequentially.
     async def controller(self, session_id, scheduling_pause_time):
-        # Initialize the State Machine
+        '''
+        The state machine is first initialized. 
+        The attack scenarios are then processed sequentially. 
+        The state machine terminates after all attacks have been successfully completed. 
+        If a timeout occurs, the state machine is also stopped.
+        '''
+        
+        # Initialization
         current_state = Names.state_machine.INIT
         timeout_detected = False
         
-        # Run State Machine in a infinite loop
         while True:
-            # State machine for executing tests
 
+            # Termination of the state machine in case of a timeout
             if (System.getTimeOutState() == True) and (timeout_detected == False):
                 timeout_detected = True
                 current_state = Names.state_machine.TIMEOUT
 
+            # Retrieval of the individual process states
             match current_state:
-                # Init state -> Currently no function
+                # State for initialization, currently not functional.
                 case Names.state_machine.INIT:
                     print('\n\n***\tCONTROLLER STATE MACHINE: INIT\t***\n\n')
                     current_state = Names.state_machine.INFORMATION_GATHERING
@@ -65,31 +75,26 @@ class ChargePoint(cp):
                         match attack:
 
                             case 0:
-                                # Wrong Data Type
                                 await self.falseDataType()
 
                             case 1:                    
-                                # False Data Length
                                 await self.falseDataLength()
 
                             case 2:
-                                # Wrong Data Value (Negative)
                                 await self.falseDataNegative()
                                 
                             case 3:
-                                # Code Injection, test if Backend can be attacked
-                                # via Python code, Shell injection or Cross-Site-Scripting
                                 await self.codeInjection()
+
+                            # You can add your individual attacks in this section here.
 
                             case _:
                                 print("ERROR: Undefined Attack Szenario")
                                 break
                                 
-                            # Additional and missing parameters will crash the program -> not included
-
                     current_state = Names.state_machine.END
 
-                # End state
+                # Final state
                 case Names.state_machine.END:
                     print('\n\n***\tCONTROLLER STATE MACHINE: END\t***\n\n')
                     #   Generate report document (PDF-File) and exit controller
@@ -106,12 +111,13 @@ class ChargePoint(cp):
                 case _:
                     print('\n\n***\tCONTROLLER STATE MACHINE: UNDEFINED\t***\n\n')
                     print("[" + str(datetime.datetime.now()) + "]:\t" + "(Controller)\t Undefined state --> Exit")
+                    # Safe shutdown of the web server to avoid causing an operating system error.
                     await System.killWebSocketServer()
                     current_state = Names.state_machine.END
 
-            # You need to pause the state machine, because otherwise the
-            # listining for ocpp action will not continue correctly
+            # Asynchronous delay must be implemented to continue to enable concurrent sniffing of OCPP traffic.
             await asyncio.sleep(scheduling_pause_time)
+
 
 
     # Just for console outputs
@@ -119,29 +125,38 @@ class ChargePoint(cp):
         print('>>\t' + str(eventType) + " event successfully monitored")
 
 
-    # Just for console outputs
+
     def printLine(self):
         print("----------------------------------------")
 
 
     '''
-        Information Gathering (Fingerprint)
+    Actions initiated by the CSMS (server): Information Gathering
     '''
 
-    # Get Configuration event
+    # This function triggers an OCPP GetConfiguration event
     async def getConfiguration(self):
         print("\n>>\tINFORMATION GATHERING: Get Configuration\n\n")
 
+        # Sending and receiving OCPP messages.
         request = call.GetConfiguration()
         response = await self.call(request)
 
+        # The rest of this function is used to document the results.
+
+
+        '''
+        First, a job is created for each event. 
+        It contains the data to be documented and the structure in which it should be saved.
+        '''
         job_data = dict()
 
         data_list = [
             ["Key", "Read only", "Value"]
         ]
 
-        # for each entry
+        # Adding and filtering data
+
         for entry in response.configuration_key:
             list_entry = []
 
@@ -152,7 +167,7 @@ class ChargePoint(cp):
             data_list.append(list_entry)
 
             # Fetch timeout interval, heatbeat interval and number of connectors of the charge point
-            # Store data in global variables
+            # This data is specifically needed for some attacks
             if entry['key'] == 'ConnectionTimeOut':
                 timeout_interval = int(entry['value'])
                 print("\n\n>>\tTimout interval fetched: " + str(timeout_interval))
@@ -169,19 +184,32 @@ class ChargePoint(cp):
 
         job_data['GetConfiguration'] = data_list
             
-        # Generate documentation for this action
         job = System.create_report_job(
             title='Information Gathering', 
             number=Names.report_state.GET_CONFIGURATION, 
             data=job_data
         )
-                
+
+        # Adding the documentation to the overall documentation
         data = Report.build_document(job, insertPageBreakAfter=True)
         System.add_to_document(data)
 
+    '''
+    Actions initiated by the CSMS (server): Attack Scenarios
+    '''
+
+
+
+    # Helper function, used in some fuzzing attacks.
+    async def generateRandomString(self):
+        length = random.randint(0,1024)
+        random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+        return random_string
+
+
 
     async def falseDataType(self):
-        # Uses UnlockConnector message
+        # Uses the OCPP event UnlockConnector
         print("\n>>\tATTACK: False Data Type\t|\tUnlockConnector")
 
         job_data = dict()
@@ -200,19 +228,19 @@ class ChargePoint(cp):
 
             match(i):
                 case 0:
-                    # 1. Korrekte Nachricht schicken
+                    # 1. Send correct message
                     print("\n\n>>\tFirst attempt: correct data type")
                     action = 'Correct request (Integer)'
                     payload = 1
 
                 case 1:
-                    # 2. Manipulierte Nachricht schicken
+                    # 2. Send manipulated message
                     print("\n\n>>\tSecond attempt: wrong data type")
                     action = 'Manipulated request #1 (String)'
                     payload = str(1)
 
                 case 2:
-                    # 3. Manipulierte Nachricht schicken
+                    # 3. Send manipulated message
                     print("\n\n>>\tThird attempt: wrong data type")
                     action = 'Manipulated request #2 (Float)'
                     payload = float(1)
@@ -220,10 +248,11 @@ class ChargePoint(cp):
             data_list.append(['Payload', payload])
             data_list.append(['Type', type(payload)])
 
-            # Example uses the UnlockConnector call
+            # Executing the attack
             request = call.UnlockConnector(payload)
             data_list.append(['Request', str(request)])
-            
+
+            # Timeout Detection
             try:
                 response = await self.call(request)
                 data_list.append(['Response (OK)', str(response)])
@@ -234,7 +263,7 @@ class ChargePoint(cp):
                 data_list.append(['Response (ERROR)', str(error)])                       
             job_data[action] = data_list
                 
-        # Generate documentation for this action
+        # Finally, the results are documented
         job = System.create_report_job(
             title='Attack: False DataType', 
             number=Names.report_state.ATTACKS, 
@@ -247,14 +276,11 @@ class ChargePoint(cp):
         print('\n')        
         self.printLine()
 
-    async def generateRandomString(self):
-        length = random.randint(0,1024)
-        random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=length))
-        return random_string
+
 
     async def falseDataLength(self):
+        # Uses the OCPP event CancelReservation
         print("\n>>\tATTACK: False Data Length\t|\tCancelReservation")
-        # Cancel Reservation
 
         job_data = dict()
 
@@ -272,25 +298,25 @@ class ChargePoint(cp):
 
             match(i):
                 case 0:
-                    # 1. Korrekte Nachricht schicken
+                    # 1. Send correct message
                     print("\n\n>>\tFirst attempt: correct data type")
                     action = 'Correct request'
                     payload = 1
 
                 case 1:
-                    # 2. Manipulierte Nachricht schicken
+                    # 2. Send manipulated message
                     print("\n\n>>\tSecond attempt: random String")
                     action = 'Manipulated request #1 (Max Size Integer)'
                     payload = int(sys.maxsize)
 
                 case 2:
-                    # 3. Manipulierte Nachricht schicken
+                    # 3. Send manipulated message
                     print("\n\n>>\tThird attempt: random String")
                     action = 'Manipulated request #2 (Random Long String)'
                     payload = await self.generateRandomString()
 
                 case 3:
-                    # 4. Manipulierte Nachricht schicken
+                    # 4. Send manipulated message
                     print("\n\n>>\tFourth attempt: empty String")
                     action = 'Manipulated request #3 (Empty String)'
                     payload = '0'
@@ -298,10 +324,11 @@ class ChargePoint(cp):
             data_list.append(['Payload', payload])
             data_list.append(['Type', type(payload)])
 
-            # Example uses the UnlockConnector call
+            # Executing the attack
             request = call.CancelReservation(payload)
             data_list.append(['Request', str(request)])
             
+            # Timeout Detection
             try:
                 response = await self.call(request)
                 data_list.append(['Response (OK)', str(response)])
@@ -312,7 +339,7 @@ class ChargePoint(cp):
                 data_list.append(['Response (ERROR)', str(error)])                       
             job_data[action] = data_list
                 
-        # Generate documentation for this action
+        # Finally, the results are documented
         job = System.create_report_job(
             title='Attack: False DataLength', 
             number=Names.report_state.ATTACKS, 
@@ -326,9 +353,10 @@ class ChargePoint(cp):
         self.printLine()
         
 
+
     async def falseDataNegative(self):
+        # Uses the OCPP event CancelReservation
         print("\n>>\tATTACK: False Data Value (Negative)\t|\tCancelReservation")
-        # ChangeAvailability    
 
         job_data = dict()
 
@@ -346,13 +374,13 @@ class ChargePoint(cp):
 
             match(i):
                 case 0:
-                    # 1. Korrekte Nachricht schicken
+                    # 1. Send correct message
                     print("\n\n>>\tFirst attempt: correct value")
                     action = 'Correct request'
                     payload = 1
 
                 case 1:
-                    # 2. Manipulierte Nachricht schicken
+                    # 2. Send manipulated message
                     print("\n\n>>\tSecond attempt: negative value")
                     action = 'Manipulated request #1 (Negative Integer)'
                     payload = -1
@@ -361,10 +389,12 @@ class ChargePoint(cp):
             data_list.append(['Payload', payload])
             data_list.append(['Type', type(payload)])
 
-            # Example uses the UnlockConnector call
+            # Executing the attack
             request = call.CancelReservation(payload)
             data_list.append(['Request', str(request)])
             
+
+            # Timeout Detection
             try:
                 response = await self.call(request)
                 data_list.append(['Response (OK)', str(response)])
@@ -375,7 +405,7 @@ class ChargePoint(cp):
                 data_list.append(['Response (ERROR)', str(error)])                       
             job_data[action] = data_list
                 
-        # Generate documentation for this action
+        # Finally, the results are documented
         job = System.create_report_job(
             title='Attack: False DataValue', 
             number=Names.report_state.ATTACKS, 
@@ -388,8 +418,10 @@ class ChargePoint(cp):
         print('\n')        
         self.printLine()
 
+
+
     async def codeInjection(self):
-        # ChangeAvailability    
+        # Uses the OCPP event RemoteStartTransaction
         print("\n>>\tATTACK: Code Injection / Cross-Site-Scripting\t|\tRemoteStartTransaction")
 
         job_data = dict()
@@ -408,19 +440,19 @@ class ChargePoint(cp):
 
             match(i):
                 case 0:
-                    # 1. Korrekte Nachricht schicken
+                    # 2. Send manipulated message
                     print("\n\n>>\tFirst attempt: Python injection -> OS Detection")
                     action = 'Python code injection (OS detection)'
                     payload = "__import__('os').system('cat /etc/os-release')"
 
                 case 1:
-                    # 1. Korrekte Nachricht schicken
+                    # 2. Send manipulated message
                     print("\n\n>>\tSecond attempt: Shell injection -> Delete File System")
                     action = 'Shell injection (Delete File System)'
                     payload = "`; rm -rf /`"
 
                 case 2:
-                    # 2. Manipulierte Nachricht schicken
+                    # 2. Send manipulated message
                     print("\n\n>>\tThird attempt: ´Cross-Site-Scripting -> Code Injection")
                     action = 'Cross-Site-Scripting (CSS)'
                     payload = "<script>alert('Cross-Site-Scripting' + ' ' + 'works!'</script>)"
@@ -429,10 +461,13 @@ class ChargePoint(cp):
             data_list.append(['Payload', payload])
             data_list.append(['Type', type(payload)])
 
-            # Example uses the UnlockConnector call
+
+            # Executing the attack
             request = call.RemoteStartTransaction(payload)
             data_list.append(['Request', str(request)])
             
+
+            # Timeout Detection
             try:
                 response = await self.call(request)
                 data_list.append(['Response (OK)', str(response)])
@@ -443,7 +478,7 @@ class ChargePoint(cp):
                 data_list.append(['Response (ERROR)', str(error)])                       
             job_data[action] = data_list
                 
-        # Generate documentation for this action
+        # Finally, the results are documented
         job = System.create_report_job(
             title='Attack: Code Injection / Cross-Site-Scripting', 
             number=Names.report_state.ATTACKS, 
@@ -462,7 +497,7 @@ class ChargePoint(cp):
     '''
 
 
-    # BootNotification, triggered every time the Charge Station boots or reboots
+    # The BootNotification is always executed when the charging station is started or restarted.
     @on(Action.BootNotification)
     def on_boot_notification(self, charge_point_vendor: str, charge_point_model: str, **kwargs):
         if 'BootNotification' not in events_monitored:
@@ -482,7 +517,8 @@ class ChargePoint(cp):
             for key, value in kwargs.items():
                 job_data['BootNotification'].append([str(key), str(value)])
 
-            # Generate event documentation
+
+            # Adding the data to the documentation.
             job = System.create_report_job(
                 title='Information Gathering', 
                 number=Names.report_state.GET_CONFIGURATION, 
@@ -525,7 +561,7 @@ class ChargePoint(cp):
             for key, value in kwargs.items():
                 job_data['StatusNotification'].append([str(key), str(value)])
 
-            # Generate event documentation
+            # Adding the data to the documentation.
             job = System.create_report_job(
                 title='Information Gathering', 
                 number=Names.report_state.GET_CONFIGURATION, 

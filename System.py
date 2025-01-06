@@ -1,4 +1,3 @@
-# Required libraries
 import socket
 import logging
 import CSMS
@@ -6,7 +5,7 @@ import asyncio
 import random
 import websockets
 
-# Required system files
+# Required project files
 import Report
 import Names
 
@@ -21,13 +20,14 @@ report_document = []
 # to the report document in the final generation process 
 template_document = []
 
+# Global variables used by different functions
 websocketServer = None
-
 ip_address_websocket_server = None
 port_websocket_server = None
 protocol_version_websocket_server = None
-
 timeout = False
+
+
 
 # Generate a random session token with a specific length
 def generateSessionToken(length):
@@ -40,9 +40,10 @@ def generateSessionToken(length):
 
     return token
 
+
+
 # Initialization function, is called first when the system starts
 def init(title, subtitle, software_version):
-    # Console outputs
     print(subtitle + "\nVersion: " + software_version, end='\n\n')
     
     # Generate report template (title page)
@@ -63,6 +64,8 @@ def init(title, subtitle, software_version):
 
     return Names.error_state.NO_ERROR
 
+
+# Used for data transfer between files
 async def triggerTimeOutError(exception):
     print("TIMEOUT DETECTED:")
     global timeout 
@@ -70,13 +73,16 @@ async def triggerTimeOutError(exception):
     print(str(exception))
 
 
+
+# Used for data transfer between files
 def getTimeOutState():
     global timeout
     return timeout
 
 
-async def startWebSocketServer():
 
+# Starting the websocket server, which is used to communicate with the charging station via the OCPP protocol.
+async def startWebSocketServer():
     print("\n>>\tStarting Websocket Server...\n")
 
     global websocketServer
@@ -89,17 +95,17 @@ async def startWebSocketServer():
     logging.info("Server Started successfully, listening to new connections...")
     await websocketServer.wait_closed()
     
+
+# Forces the web server to shut down, for example if the program terminates due to a timeout.
 async def killWebSocketServer():
     print(">>\tTry to shutdown WebSocket Server")
     global websocketServer
     websocketServer.close()
-    #await websocketServer.wait_closed()
     print("WebSocket Server shutdown complete")
 
 
 
-
-# Used to store the WebSocket and application configuration to the report document
+# Used to store the websocket and application configuration to the report document
 def store_configuration(system_version, protocol_version, ip_address, port, boot_timestamp):
     #   Add data to job
     job_data = dict()
@@ -126,6 +132,8 @@ def store_configuration(system_version, protocol_version, ip_address, port, boot
         Report.build_document(job, insertPageBreakAfter=True)
     )
 
+
+    # Set global variables for data transfer between files and functions
     global ip_address_websocket_server, port_websocket_server, protocol_version_websocket_server
 
     ip_address_websocket_server = ip_address
@@ -135,7 +143,8 @@ def store_configuration(system_version, protocol_version, ip_address, port, boot
     return 0
 
 
-# Format input data to job
+
+# Custom data type used for documentation.
 def create_report_job(title, number, data):
     job = {
         'title': title,
@@ -145,12 +154,14 @@ def create_report_job(title, number, data):
     return job
 
 
-# Function to get the local Ip-Address of the host (CSMS)
+
+# Used to get the local Ip-Address of the host (CSMS)
 def getLocalIpAddress():
     return socket.gethostbyname_ex(socket.gethostname())[-1]
 
 
-# Manual ip configuration via console
+
+# Used to manually configure the IP address.
 def getIpAddress(default_ip):
     # You can change the default IP address in Main.py
     print(">>\tDefault IP Adress is: " + str(default_ip))
@@ -197,6 +208,7 @@ def getIpAddress(default_ip):
     return ip
 
 
+
 # Process to verify that a IPv4 address is valid
 def verify_ip_address(ip_address):
     # Check whether the address is valid
@@ -215,6 +227,7 @@ def verify_ip_address(ip_address):
         return False
     
 
+
 # Function to check if a port is valid
 def verify_port_number(port):
     if (int(port) >= 0 and int(port) <= 65535):
@@ -223,13 +236,13 @@ def verify_port_number(port):
         return False
 
 
-# Configurate port used for WebSocket connection
+
+# Configurate port used for the websocket connection
 def getPort(default_port):
     # You can change the default port in Main.py
     print(">>\tDefault port is: " + str(default_port))
 
     port = default_port
-
     answer = ''
 
     # Verify user input data
@@ -276,7 +289,7 @@ def getPort(default_port):
     return port
 
 
-# Add a specific object to the report document
+# Add anything to the report document
 def add_to_document(data):
     report_document.append(data)
     return 0
@@ -290,17 +303,21 @@ def generate_report():
     )
     export_document = template_document + report_document
 
-    # Specify document format and generate document finally
+    # Specify document format and generate the document finally
     filename = str(session_id) + '.pdf'
     Report.render_document(data=export_document, filename=filename)
     print(">>\tDocument rendered successfully")
 
 
-# This function permanently monitors the connection to the charging station
+
+'''
+This function permanently monitors the connection to the charging station.
+'''
 async def on_connect(websocket, path):
 
-    """For every new charge point that connects, create a ChargePoint
-    instance and start listening for messages.
+    """
+    For every new charge point that connects,
+    create a ChargePoint instance and start listening for messages.
     """
     try:
         requested_protocols = websocket.request_headers["Sec-WebSocket-Protocol"]
@@ -331,7 +348,7 @@ async def on_connect(websocket, path):
         be executed as tasks -> comparable to Multi-Threading
     ''' 
 
-    # Task used as a controller (state machine) for the tests and documentation
+    # Task used as a controller (state machine)
     controller_task = asyncio.create_task(
         cp.controller(session_id=session_id, scheduling_pause_time=1)
     )
@@ -348,7 +365,7 @@ async def on_connect(websocket, path):
     await asyncio.sleep(10)
 
     if getTimeOutState() != True:
-        # Shutdown server
+        # Shutdown websocket server
         await killWebSocketServer()
 
         ocpp_messages_task.cancel()

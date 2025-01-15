@@ -1,3 +1,4 @@
+[![Logo of NOCPP](logo.png)](https://github.com/leonard-voss/nocpp)
 # nocpp (No Charge Point Protocol)
 ## :clipboard: Description
 NOCPP is the result of a project at the Ostwestfalen-Lippe University of Applied Sciences. It was developed by students of the Computer Engineering course. The client for this project is the company rt-solutions.de, which provides advice and solutions in information and OT security.

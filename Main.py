@@ -44,6 +44,8 @@ bootTimestamp = datetime.now()
 
 
 async def main():
+    global ip_address
+    global port
     # Generate template for documentation
     System.init(title=TITLE, subtitle=SUBTITLE, software_version=SOFTWARE_VERSION)
 

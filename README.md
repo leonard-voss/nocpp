@@ -10,13 +10,16 @@ NOCPP is an application for targeted pentesting of a charging station. The OCPP 
 
 This project is based on the Open-Source OCPP implementation in Python by The Mobility House, which you can find [here](https://github.com/mobilityhouse/ocpp).
 
+## :warning: Further Project Development
+The version of nocpp published here is the first development of this software. **Future developments will be published exclusively on Gitlab,** [in this repository.](https://gitlab.com/rt-solutions.de/nocpp).
+
 ## :floppy_disk: Charge Point support
 
 Currently OCPP 1.6-J (JSON) is the only supported version.
 
 The application was tested on a charging station from the manufacturer Weidmüller, model AC Smart Advanced.
 
-## :warning: System Requirements
+## :rocket: System Requirements
 
 Please make sure you use Python version 3.10 or higher.
 
